@@ -14,19 +14,6 @@
     "db:init": "node scripts/init-db.mjs"
   },
   "dependencies": {
-    "bcryptjs": "^2.4.3",
-    "better-sqlite3": "^11.3.0",
-    "clsx": "^2.1.1",
-    "framer-motion": "^11.11.0",
-    "jsonwebtoken": "^9.0.2",
-    "lucide-react": "^0.460.0",
-    "next": "15.5.18",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "tailwind-merge": "^2.5.4",
-    "zod": "^3.23.8"
-  },
-  "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
     "@types/better-sqlite3": "^7.6.11",
     "@types/jsonwebtoken": "^9.0.7",
@@ -34,8 +21,19 @@
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "autoprefixer": "^10.4.20",
+    "bcryptjs": "^2.4.3",
+    "better-sqlite3": "^11.3.0",
+    "clsx": "^2.1.1",
+    "framer-motion": "^11.11.0",
+    "jsonwebtoken": "^9.0.2",
+    "lucide-react": "^0.460.0",
+    "next": "15.5.18",
     "postcss": "^8.4.49",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "tailwind-merge": "^2.5.4",
     "tailwindcss": "^3.4.14",
-    "typescript": "^5.6.3"
+    "typescript": "^5.6.3",
+    "zod": "^3.23.8"
   }
 }
