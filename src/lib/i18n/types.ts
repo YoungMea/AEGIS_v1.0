@@ -1,0 +1,330 @@
+/**
+ * Shared types for the translation system.
+ * The full Translation tree is duplicated in each locale file (en/uz/ru) so
+ * TypeScript can guarantee parity at compile time.
+ */
+
+export type Locale = "uz" | "ru" | "en";
+
+export interface NewsItem {
+  category: string;
+  date: string;
+  title: string;
+  blurb: string;
+  body: string[]; // paragraphs
+  highlights?: { title: string; desc: string }[];
+  cta?: string;
+}
+
+export interface Translation {
+  meta: {
+    nativeName: string;
+    code: string;
+  };
+  common: {
+    loading: string;
+    cancel: string;
+    save: string;
+    saving: string;
+    edit: string;
+    delete: string;
+    open: string;
+    back: string;
+    continue: string;
+    close: string;
+    search: string;
+    networkError: string;
+    invalidInput: string;
+    print: string;
+    exportPdf: string;
+    archive: string;
+    copy: string;
+    copied: string;
+  };
+  language: {
+    label: string;
+    select: string;
+  };
+  nav: {
+    database: string;
+    add: string;
+    find: string;
+    news: string;
+    support: string;
+  };
+  profile: {
+    operative: string;
+    changePassword: string;
+    logout: string;
+  };
+  auth: {
+    classifiedAccessPortal: string;
+    enrollmentProtocol: string;
+    secureTerminal: string;
+    secureSession: string;
+    recoverUid: {
+      trigger: string;
+      title: string;
+      sub: string;
+      phoneLabel: string;
+      phonePlaceholder: string;
+      sendCode: string;
+      verifyTitle: string;
+      verifySub: string;
+      verify: string;
+      revealedTitle: string;
+      revealedSub: string;
+      done: string;
+      copy: string;
+      backToLogin: string;
+      tryAgain: string;
+      genericError: string;
+      noChannelHint: string;
+    };
+    login: {
+      heading: string;
+      subheading: string;
+      uidLabel: string;
+      uidHint: string;
+      passwordLabel: string;
+      passwordHint: string;
+      submit: string;
+      verifying: string;
+      granted: string;
+      noClearance: string;
+      requestEnrollment: string;
+      uidInvalid: string;
+      passwordRequired: string;
+      authFailed: string;
+      tagline1: string;
+      tagline2: string;
+      tagline3: string;
+      taglineDesc: string;
+    };
+    register: {
+      steps: {
+        phone: string;
+        telegram: string;
+        verify: string;
+        key: string;
+        issued: string;
+        phoneSub: string;
+        telegramSub: string;
+        verifySub: string;
+        keySub: string;
+        issuedSub: string;
+      };
+      phoneTitle: string;
+      phoneSub: string;
+      phoneLabel: string;
+      phoneHint: string;
+      phonePlaceholder: string;
+      phoneInvalid: string;
+      tgTitle: string;
+      tgSub: string;
+      tgBotLabel: string;
+      tgAwaiting: string;
+      tgLinked: string;
+      tgInstruction1Title: string;
+      tgInstruction1Desc: string;
+      tgInstruction2Title: string;
+      tgInstruction2Desc: string;
+      tgInstruction3Title: string;
+      tgInstruction3Desc: string;
+      tgOpenButton: string;
+      tgChannelLinkedTo: string;
+      tgChannelLinked: string;
+      tgSendCode: string;
+      tgLinkExpired: string;
+      verifyTitle: string;
+      verifySubTelegram: string;
+      verifySubTelegramTo: string;
+      verifySubSms: string;
+      verifyFull: string;
+      verifyButton: string;
+      keyTitle: string;
+      keySub: string;
+      displayNameLabel: string;
+      displayNameHint: string;
+      displayNamePlaceholder: string;
+      passwordLabel: string;
+      passwordPlaceholder: string;
+      issueClearance: string;
+      successTitle: string;
+      successSub: string;
+      assignedUid: string;
+      statusActive: string;
+      tier: string;
+      routing: string;
+      strengthError: string;
+      changeNumber: string;
+      resend: string;
+      transmitCode: string;
+      linkExpiresIn: string;
+      codeExpiresIn: string;
+      simulatedOtp: string;
+      passwordStrength: string;
+      strengthVeryWeak: string;
+      strengthWeak: string;
+      strengthFair: string;
+      strengthStrong: string;
+      strengthExcellent: string;
+      hintMin: string;
+      hintUpper: string;
+      hintLower: string;
+      hintDigit: string;
+    };
+    changePassword: {
+      title: string;
+      currentLabel: string;
+      newLabel: string;
+      confirmLabel: string;
+      mismatch: string;
+      success: string;
+      successDesc: string;
+      rotate: string;
+      currentIncorrect: string;
+    };
+  };
+  database: {
+    badge: string;
+    titlePart1: string;
+    titlePart2: string;
+    subtitle: string;
+    statDossiers: string;
+    statActive: string;
+    statHighRisk: string;
+    searchPlaceholder: string;
+    newDossier: string;
+    emptyTitleNoMatch: string;
+    emptyDescNoMatch: string;
+    emptyTitle: string;
+    emptyDesc: string;
+    openInvestigation: string;
+    confirmDelete: string;
+    purged: string;
+    purgedDesc: string;
+    cantDelete: string;
+    untitledSubject: string;
+    aliasLabel: string;
+    statusActive: string;
+    statusArchived: string;
+    statusPending: string;
+    statusClosed: string;
+    riskLow: string;
+    riskMedium: string;
+    riskHigh: string;
+    riskCritical: string;
+  };
+  add: {
+    badgeEditing: string;
+    badgeNew: string;
+    operator: string;
+    headingDossier: string;
+    sections: {
+      subject: string;
+      geolocation: string;
+      digital: string;
+      summary: string;
+      notes: string;
+      timeline: string;
+      connections: string;
+      evidence: string;
+      tags: string;
+    };
+    fields: {
+      fullName: string;
+      fullNamePh: string;
+      alias: string;
+      aliasPh: string;
+      phone: string;
+      phonePh: string;
+      email: string;
+      emailPh: string;
+      country: string;
+      city: string;
+      address: string;
+      socialMedia: string;
+      knownAccounts: string;
+      socialPh: string;
+      knownPh: string;
+      summaryPh: string;
+      notesPh: string;
+      evidencePh: string;
+      eventPh: string;
+      personPh: string;
+      relationPh: string;
+      tagPh: string;
+      addTag: string;
+    };
+    statusLabel: string;
+    riskLabel: string;
+    agent: string;
+    created: string;
+    updated: string;
+    pending: string;
+    uploadTitle: string;
+    uploadHint: string;
+    uploadBrowse: string;
+    imageTooLarge: string;
+    subjectStamp: string;
+    saved: string;
+    savedRef: string;
+    updatedToast: string;
+    couldNotSave: string;
+    classified: string;
+    endOfDocument: string;
+  };
+  find: {
+    badge: string;
+    titlePart1: string;
+    titlePart2: string;
+    subtitle: string;
+    placeholder: string;
+    hint: string;
+    searchHintEmpty: string;
+    noMatch: string;
+    you: string;
+    enrolled: string;
+    statusActive: string;
+    operative: string;
+    clear: string;
+  };
+  news: {
+    badge: string;
+    titlePart1: string;
+    titlePart2: string;
+    subtitle: string;
+    readMore: string;
+    backToList: string;
+    items: {
+      aegisDemo: NewsItem;
+      hawkeye: NewsItem;
+    };
+  };
+  support: {
+    badge: string;
+    titlePart1: string;
+    titlePart2: string;
+    subtitle: string;
+    contactCardTitle: string;
+    contactCardDesc: string;
+    openTelegram: string;
+    botUnavailable: string;
+    formTitle: string;
+    formDesc: string;
+    nameLabel: string;
+    namePlaceholder: string;
+    messageLabel: string;
+    messagePlaceholder: string;
+    messageHint: string;
+    sendButton: string;
+    sending: string;
+    copiedTitle: string;
+    copiedDesc: string;
+    faqTitle: string;
+    faq: { q: string; a: string }[];
+    onlineNow: string;
+    avgResponse: string;
+  };
+}
