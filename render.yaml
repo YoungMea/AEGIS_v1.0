@@ -1,12 +1,18 @@
 # Render Blueprint — describes the AEGIS web service.
 # https://render.com/docs/blueprint-spec
+#
+# NOTE: free tier doesn't support persistent disks, so the SQLite database
+# lives in the container's filesystem and is reset whenever the container
+# is recycled (free instances spin down after ~15 min of inactivity).
+# This is fine for demos — for production, upgrade to a paid plan and
+# uncomment the `disk:` block below, or migrate to a hosted database.
 
 services:
   - type: web
     name: aegis
     runtime: node
     plan: free
-    region: frankfurt # closest free region; change to oregon/singapore if you prefer
+    region: frankfurt # change to oregon/singapore if you prefer
     buildCommand: npm ci && npm run build
     startCommand: npm run start
     healthCheckPath: /login
@@ -16,9 +22,9 @@ services:
         value: production
       - key: NODE_VERSION
         value: "20"
-      # SQLite database lives on the persistent disk mounted below.
+      # Ephemeral SQLite path — fine for demos.
       - key: DATABASE_URL
-        value: /var/data/aegis.db
+        value: ./data/aegis.db
       - key: JWT_SECRET
         generateValue: true
       - key: JWT_EXPIRES_IN
@@ -45,7 +51,10 @@ services:
         value: AEGIS
       - key: NEXT_PUBLIC_AGENCY_FULL
         value: Advanced Electronic General Intelligence Service
-    disk:
-      name: aegis-data
-      mountPath: /var/data
-      sizeGB: 1
+
+# To enable persistent storage on a paid plan, uncomment:
+#    disk:
+#      name: aegis-data
+#      mountPath: /var/data
+#      sizeGB: 1
+# and set DATABASE_URL to /var/data/aegis.db
