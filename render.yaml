@@ -1,0 +1,51 @@
+# Render Blueprint — describes the AEGIS web service.
+# https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: aegis
+    runtime: node
+    plan: free
+    region: frankfurt # closest free region; change to oregon/singapore if you prefer
+    buildCommand: npm ci && npm run build
+    startCommand: npm run start
+    healthCheckPath: /login
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: "20"
+      # SQLite database lives on the persistent disk mounted below.
+      - key: DATABASE_URL
+        value: /var/data/aegis.db
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: OTP_CHANNEL
+        value: telegram
+      - key: OTP_LENGTH
+        value: "6"
+      - key: OTP_TTL_SECONDS
+        value: "300"
+      - key: BCRYPT_ROUNDS
+        value: "12"
+      # These are filled in via the Render dashboard so the bot token never
+      # ends up in the repository.
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: TELEGRAM_BOT_USERNAME
+        sync: false
+      - key: NEXT_PUBLIC_TELEGRAM_BOT_USERNAME
+        sync: false
+      - key: NEXT_PUBLIC_TELEGRAM_SUPPORT_BOT_USERNAME
+        sync: false
+      - key: NEXT_PUBLIC_AGENCY_NAME
+        value: AEGIS
+      - key: NEXT_PUBLIC_AGENCY_FULL
+        value: Advanced Electronic General Intelligence Service
+    disk:
+      name: aegis-data
+      mountPath: /var/data
+      sizeGB: 1

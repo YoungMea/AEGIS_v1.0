@@ -3,10 +3,13 @@
   "version": "1.0.0",
   "private": true,
   "description": "AEGIS — Classified OSINT Intelligence Platform (Educational)",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
+    "start": "next start -p ${PORT:-3000}",
     "lint": "next lint",
     "db:init": "node scripts/init-db.mjs"
   },
