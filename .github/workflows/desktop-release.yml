@@ -22,14 +22,12 @@ jobs:
         include:
           - os: windows-latest
             target: win
+            ext: exe
           - os: ubuntu-latest
             target: linux
+            ext: AppImage
 
     runs-on: ${{ matrix.os }}
-
-    defaults:
-      run:
-        working-directory: desktop
 
     steps:
       - name: Checkout
@@ -40,14 +38,36 @@ jobs:
         with:
           node-version: "20"
 
-      - name: Install dependencies
-        run: npm install --no-audit --no-fund
+      # Print versions early so failures surface useful context.
+      - name: Show versions
+        shell: bash
+        run: |
+          node --version
+          npm --version
+          ls desktop
 
-      - name: Build (${{ matrix.target }})
+      - name: Install dependencies
+        working-directory: desktop
+        shell: bash
+        run: |
+          npm install --no-audit --no-fund --loglevel=warn
+
+      - name: Build for ${{ matrix.target }}
+        working-directory: desktop
+        shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           USE_HARD_LINKS: "false"
-        run: npm run build:${{ matrix.target }}
+          # Skip the macOS entry in electron-builder.yml on this matrix.
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+        run: |
+          npm run build:${{ matrix.target }}
+
+      - name: List build output
+        working-directory: desktop
+        shell: bash
+        run: |
+          ls -la dist || true
 
       - name: Upload artefacts
         uses: actions/upload-artifact@v4
@@ -57,7 +77,6 @@ jobs:
             desktop/dist/*.exe
             desktop/dist/*.AppImage
             desktop/dist/*.deb
-            desktop/dist/*.dmg
           if-no-files-found: warn
 
   release:
@@ -69,6 +88,9 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: artefacts
+
+      - name: List downloaded artefacts
+        run: find artefacts -type f -printf '%p (%s bytes)\n' || true
 
       - name: Create / update GitHub Release
         uses: softprops/action-gh-release@v2

@@ -58,6 +58,14 @@ linux:
     Comment: Classified Intelligence Platform
     Categories: Network;Security;Office
 
+# Make sure the chrome-sandbox helper is installed with the right perms.
+# Without this, .deb installs leave the sandbox helper non-suid and the app
+# refuses to start with a "sandbox helper binary was found, but is not
+# configured correctly" error.
+deb:
+  fpm:
+    - "--after-install=after-install.sh"
+
 # macOS (.dmg) — optional, included so a future cross-build can target it.
 mac:
   target:

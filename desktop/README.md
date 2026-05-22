@@ -1,6 +1,6 @@
 # AEGIS Desktop (Beta)
 
-Native shell around the AEGIS web app. Loads `https://aegis-v1-0.onrender.com`
+Native shell around the AEGIS web app. Loads `https://aegis-a1ni.onrender.com`
 inside a chrome-less Electron window with a custom splash screen, single-instance
 guarding, friendly offline error page and external link handling.
 

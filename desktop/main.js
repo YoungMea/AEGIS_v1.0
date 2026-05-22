@@ -8,7 +8,7 @@
 const { app, BrowserWindow, Menu, shell, nativeImage } = require("electron");
 const path = require("node:path");
 
-const TARGET_URL = process.env.AEGIS_URL || "https://aegis-v1-0.onrender.com";
+const TARGET_URL = process.env.AEGIS_URL || "https://aegis-a1ni.onrender.com";
 
 // Single instance — clicking the icon again focuses the existing window.
 const gotLock = app.requestSingleInstanceLock();
