@@ -1,11 +1,9 @@
 name: Desktop release
 
-# Build the Electron desktop client for Windows and Linux every time a
-# release tag (e.g. v1.0.0-beta.1) is pushed, and attach the artefacts to
-# the matching GitHub Release.
-#
-# Manual builds are also possible via the "workflow_dispatch" entry in the
-# Actions tab — handy for testing without cutting a tag.
+# Build the Electron desktop client for Windows and Linux on every release
+# tag (e.g. v1.0.0-beta.1) and attach the artefacts to the matching
+# GitHub Release. Manual runs via the "workflow_dispatch" entry are
+# supported for testing without cutting a tag.
 
 on:
   push:
@@ -41,15 +39,14 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: "npm"
-          cache-dependency-path: desktop/package-lock.json
 
       - name: Install dependencies
-        run: npm ci || npm install
+        run: npm install --no-audit --no-fund
 
       - name: Build (${{ matrix.target }})
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          USE_HARD_LINKS: "false"
         run: npm run build:${{ matrix.target }}
 
       - name: Upload artefacts
@@ -61,7 +58,7 @@ jobs:
             desktop/dist/*.AppImage
             desktop/dist/*.deb
             desktop/dist/*.dmg
-          if-no-files-found: ignore
+          if-no-files-found: warn
 
   release:
     needs: build
