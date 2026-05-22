@@ -261,6 +261,10 @@ export const en: Translation = {
     couldNotSave: "Could not save",
     classified: "CLASSIFIED",
     endOfDocument: "END OF DOCUMENT · UNAUTHORIZED DUPLICATION PROHIBITED",
+    evidenceImagesLabel: "Evidence images",
+    evidenceImagesTitle: "Evidence Photos",
+    evidenceAdd: "Add",
+    evidenceDropHint: "Drop images here or click to browse",
   },
   find: {
     badge: "PERSONNEL DIRECTORY",

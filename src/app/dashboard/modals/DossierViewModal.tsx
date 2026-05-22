@@ -1,5 +1,6 @@
 "use client";
-import { motion } from "framer-motion";
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   X,
   Pencil,
@@ -12,6 +13,9 @@ import {
   Users,
   FileText,
   Printer,
+  Camera,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import type { Dossier } from "@/lib/dossier";
 import type { SessionUserDto } from "../types";
@@ -29,6 +33,7 @@ interface Props {
 export function DossierViewModal({ dossier, user, onClose, onEdit }: Props) {
   const { t } = useI18n();
   const ref = `AGS-${dossier.id.slice(-8).toUpperCase()}`;
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   return (
     <motion.div
@@ -229,6 +234,35 @@ export function DossierViewModal({ dossier, user, onClose, onEdit }: Props) {
               </ViewSection>
             )}
 
+            {dossier.evidenceImages.length > 0 && (
+              <ViewSection
+                title={t.add.evidenceImagesTitle}
+                icon={<Camera size={14} />}
+              >
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                  {dossier.evidenceImages.map((src, i) => (
+                    <button
+                      type="button"
+                      key={i}
+                      onClick={() => setLightboxIndex(i)}
+                      className="relative aspect-square rounded-md overflow-hidden border border-white/10 bg-ink-200 group focus:outline-none focus:ring-2 focus:ring-emerald-glow/60"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={src}
+                        alt={`Evidence ${i + 1}`}
+                        className="h-full w-full object-cover transition group-hover:scale-105"
+                      />
+                      <div className="absolute inset-0 ring-1 ring-emerald-glow/0 group-hover:ring-emerald-glow/40 transition" />
+                      <div className="absolute top-1 left-1 font-mono text-[9px] uppercase tracking-[0.22em] text-white/85 bg-black/60 px-1.5 py-0.5 rounded">
+                        EV-{(i + 1).toString().padStart(2, "0")}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </ViewSection>
+            )}
+
             {dossier.tags.length > 0 && (
               <ViewSection title={t.add.sections.tags} icon={<Tag size={14} />}>
                 <div className="flex flex-wrap gap-2">
@@ -253,6 +287,17 @@ export function DossierViewModal({ dossier, user, onClose, onEdit }: Props) {
           </div>
         </div>
       </motion.div>
+
+      <AnimatePresence>
+        {lightboxIndex !== null && (
+          <Lightbox
+            images={dossier.evidenceImages}
+            index={lightboxIndex}
+            onIndex={setLightboxIndex}
+            onClose={() => setLightboxIndex(null)}
+          />
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }
@@ -349,5 +394,90 @@ function RiskBadge({ level, t }: { level: string; t: import("@/lib/i18n").Transl
     <span className={`badge ${map[level] ?? ""}`}>
       <ShieldAlert size={10} /> RISK · {labelMap[level] ?? level}
     </span>
+  );
+}
+
+
+function Lightbox({
+  images,
+  index,
+  onIndex,
+  onClose,
+}: {
+  images: string[];
+  index: number;
+  onIndex: (i: number) => void;
+  onClose: () => void;
+}) {
+  // Keyboard navigation: arrows and Escape.
+  if (typeof document !== "undefined") {
+    document.body.style.overflow = "hidden";
+  }
+
+  const prev = () => onIndex((index - 1 + images.length) % images.length);
+  const next = () => onIndex((index + 1) % images.length);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[60] grid place-items-center bg-black/90 backdrop-blur-sm p-4"
+      onClick={onClose}
+      onKeyDown={(e) => {
+        if (e.key === "ArrowLeft") prev();
+        if (e.key === "ArrowRight") next();
+        if (e.key === "Escape") onClose();
+      }}
+      tabIndex={-1}
+    >
+      <button
+        type="button"
+        onClick={onClose}
+        aria-label="Close"
+        className="absolute top-4 right-4 h-10 w-10 grid place-items-center rounded-md bg-white/[0.04] border border-white/10 text-white/85 hover:text-white"
+      >
+        <X size={18} />
+      </button>
+
+      <div
+        className="relative max-w-[92vw] max-h-[88vh] flex items-center"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {images.length > 1 && (
+          <button
+            type="button"
+            onClick={prev}
+            aria-label="Previous"
+            className="absolute -left-2 sm:-left-12 h-12 w-12 grid place-items-center rounded-full bg-black/60 text-white/85 hover:text-white"
+          >
+            <ChevronLeft size={22} />
+          </button>
+        )}
+
+        <div className="relative">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={images[index]}
+            alt={`Evidence ${index + 1}`}
+            className="max-h-[88vh] max-w-[92vw] object-contain rounded-md border border-white/10"
+          />
+          <div className="absolute top-3 left-3 font-mono text-[10px] uppercase tracking-[0.22em] text-white/85 bg-black/60 px-2 py-1 rounded">
+            EV-{(index + 1).toString().padStart(2, "0")} · {index + 1}/{images.length}
+          </div>
+        </div>
+
+        {images.length > 1 && (
+          <button
+            type="button"
+            onClick={next}
+            aria-label="Next"
+            className="absolute -right-2 sm:-right-12 h-12 w-12 grid place-items-center rounded-full bg-black/60 text-white/85 hover:text-white"
+          >
+            <ChevronRight size={22} />
+          </button>
+        )}
+      </div>
+    </motion.div>
   );
 }

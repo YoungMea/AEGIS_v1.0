@@ -275,6 +275,10 @@ export interface Translation {
     couldNotSave: string;
     classified: string;
     endOfDocument: string;
+    evidenceImagesLabel: string;
+    evidenceImagesTitle: string;
+    evidenceAdd: string;
+    evidenceDropHint: string;
   };
   find: {
     badge: string;

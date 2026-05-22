@@ -261,6 +261,10 @@ export const uz: Translation = {
     couldNotSave: "Saqlab bo'lmadi",
     classified: "MAXFIY",
     endOfDocument: "HUJJAT TUGADI · RUXSATSIZ NUSXALASH TAQIQLANADI",
+    evidenceImagesLabel: "Dalil rasmlari",
+    evidenceImagesTitle: "Dalil Rasmlari",
+    evidenceAdd: "Qo'shish",
+    evidenceDropHint: "Rasmlarni shu yerga tashlang yoki tanlang",
   },
   find: {
     badge: "XODIMLAR KATALOGI",

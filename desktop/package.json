@@ -1,0 +1,26 @@
+{
+  "name": "aegis-desktop",
+  "productName": "AEGIS",
+  "version": "1.0.0-beta.1",
+  "description": "AEGIS Classified Intelligence Platform — desktop client",
+  "homepage": "https://github.com/YoungMea/AEGIS_v1.0",
+  "author": {
+    "name": "AEGIS Educational Project",
+    "email": "aegis@example.com"
+  },
+  "license": "MIT",
+  "private": true,
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "AEGIS_URL=http://localhost:3000 electron .",
+    "pack": "electron-builder --dir",
+    "build": "electron-builder",
+    "build:win": "electron-builder --win",
+    "build:linux": "electron-builder --linux"
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
+  }
+}

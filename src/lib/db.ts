@@ -47,6 +47,7 @@ function migrate(db: Database.Database) {
   safeAlter("ALTER TABLE otp_sessions ADD COLUMN chat_id TEXT");
   safeAlter("ALTER TABLE users ADD COLUMN telegram_chat_id TEXT");
   safeAlter("ALTER TABLE users ADD COLUMN telegram_username TEXT");
+  safeAlter("ALTER TABLE dossiers ADD COLUMN evidence_images TEXT");
 }
 
 function init(db: Database.Database) {
@@ -130,6 +131,7 @@ function init(db: Database.Database) {
       activity_timeline     TEXT,
       connections           TEXT,
       additional_evidence   TEXT,
+      evidence_images       TEXT, -- encrypted JSON array of base64 data URLs
       risk_level            TEXT NOT NULL DEFAULT 'LOW',
       tags                  TEXT,
       created_at            INTEGER NOT NULL,

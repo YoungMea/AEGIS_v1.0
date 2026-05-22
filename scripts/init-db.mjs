@@ -61,6 +61,7 @@ db.exec(`
     activity_timeline     TEXT,
     connections           TEXT,
     additional_evidence   TEXT,
+    evidence_images       TEXT,
     risk_level            TEXT NOT NULL DEFAULT 'LOW',
     tags                  TEXT,
     created_at            INTEGER NOT NULL,

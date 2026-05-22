@@ -71,6 +71,10 @@ export const dossierSchema = z.object({
     .array(z.object({ name: z.string(), relation: z.string() }))
     .default([]),
   additionalEvidence: z.string().max(8000).optional().nullable(),
+  evidenceImages: z
+    .array(z.string().max(7_000_000)) // ~5 MB base64 (4 MB raw)
+    .max(10)
+    .default([]),
   riskLevel: z.enum(["LOW", "MEDIUM", "HIGH", "CRITICAL"]).default("LOW"),
   tags: z.array(z.string().max(40)).max(40).default([]),
 });

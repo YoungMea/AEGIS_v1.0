@@ -261,6 +261,10 @@ export const ru: Translation = {
     couldNotSave: "Не удалось сохранить",
     classified: "СЕКРЕТНО",
     endOfDocument: "КОНЕЦ ДОКУМЕНТА · НЕСАНКЦИОНИРОВАННОЕ КОПИРОВАНИЕ ЗАПРЕЩЕНО",
+    evidenceImagesLabel: "Фото-доказательства",
+    evidenceImagesTitle: "Фото-доказательства",
+    evidenceAdd: "Добавить",
+    evidenceDropHint: "Перетащите изображения или выберите вручную",
   },
   find: {
     badge: "СПРАВОЧНИК ПЕРСОНАЛА",

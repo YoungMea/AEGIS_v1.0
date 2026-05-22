@@ -47,6 +47,7 @@ interface FormState {
   activityTimeline: { date: string; event: string }[];
   connections: { name: string; relation: string }[];
   additionalEvidence: string;
+  evidenceImages: string[];
   riskLevel: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
   tags: string[];
 }
@@ -69,6 +70,7 @@ const empty: FormState = {
   activityTimeline: [],
   connections: [],
   additionalEvidence: "",
+  evidenceImages: [],
   riskLevel: "LOW",
   tags: [],
 };
@@ -101,6 +103,7 @@ export function AddSection({ user, editing, onCancel, onSaved }: Props) {
         activityTimeline: editing.activityTimeline ?? [],
         connections: editing.connections ?? [],
         additionalEvidence: editing.additionalEvidence ?? "",
+        evidenceImages: editing.evidenceImages ?? [],
         riskLevel: editing.riskLevel as FormState["riskLevel"],
         tags: editing.tags ?? [],
       });
@@ -133,6 +136,7 @@ export function AddSection({ user, editing, onCancel, onSaved }: Props) {
         notes: form.notes || null,
         investigationSummary: form.investigationSummary || null,
         additionalEvidence: form.additionalEvidence || null,
+        evidenceImages: form.evidenceImages,
       };
       const res = editing
         ? await fetch(`/api/dossiers/${editing.id}`, {
@@ -438,6 +442,11 @@ export function AddSection({ user, editing, onCancel, onSaved }: Props) {
                   placeholder={t.add.fields.evidencePh}
                 />
               </DocField>
+              <EvidenceGallery
+                images={form.evidenceImages}
+                onChange={(v) => set("evidenceImages", v)}
+                t={t}
+              />
             </Section>
 
             <Section title={t.add.sections.tags}>
@@ -942,6 +951,181 @@ function TagsField({
         }}
         placeholder={t.add.fields.tagPh}
         className="docinput max-w-[180px]"
+      />
+    </div>
+  );
+}
+
+
+const MAX_EVIDENCE_IMAGES = 10;
+const MAX_EVIDENCE_BYTES = 4 * 1024 * 1024; // 4 MB raw per image
+
+function EvidenceGallery({
+  images,
+  onChange,
+  t,
+}: {
+  images: string[];
+  onChange: (v: string[]) => void;
+  t: Translation;
+}) {
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const [drag, setDrag] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  async function ingest(files: FileList | File[]) {
+    const arr = Array.from(files).filter((f) => f.type.startsWith("image/"));
+    if (arr.length === 0) return;
+    const remaining = MAX_EVIDENCE_IMAGES - images.length;
+    if (remaining <= 0) return;
+    const slice = arr.slice(0, remaining);
+
+    setBusy(true);
+    const next: string[] = [];
+    for (const f of slice) {
+      if (f.size > MAX_EVIDENCE_BYTES) continue;
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(f);
+      });
+      next.push(dataUrl);
+    }
+    setBusy(false);
+    if (next.length) onChange([...images, ...next]);
+  }
+
+  function removeAt(i: number) {
+    const copy = [...images];
+    copy.splice(i, 1);
+    onChange(copy);
+  }
+
+  function move(i: number, dir: -1 | 1) {
+    const j = i + dir;
+    if (j < 0 || j >= images.length) return;
+    const copy = [...images];
+    [copy[i], copy[j]] = [copy[j]!, copy[i]!];
+    onChange(copy);
+  }
+
+  return (
+    <div className="mt-4">
+      <div className="flex items-center justify-between mb-2">
+        <span className="label-mono">
+          {t.add.evidenceImagesLabel} · {images.length}/{MAX_EVIDENCE_IMAGES}
+        </span>
+        <button
+          type="button"
+          onClick={() => inputRef.current?.click()}
+          disabled={images.length >= MAX_EVIDENCE_IMAGES || busy}
+          className="btn-ghost h-8 px-2.5 text-[10px] uppercase tracking-[0.18em] font-mono"
+        >
+          {busy ? (
+            <Loader2 size={12} className="animate-spin" />
+          ) : (
+            <Upload size={12} />
+          )}
+          {t.add.evidenceAdd}
+        </button>
+      </div>
+
+      <div
+        onDragOver={(e) => {
+          e.preventDefault();
+          setDrag(true);
+        }}
+        onDragLeave={() => setDrag(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setDrag(false);
+          if (e.dataTransfer.files?.length) void ingest(e.dataTransfer.files);
+        }}
+        className={cn(
+          "rounded-md border border-dashed p-3 transition",
+          drag
+            ? "border-emerald-glow/60 bg-emerald-glow/[0.04]"
+            : "border-white/10",
+        )}
+      >
+        {images.length === 0 ? (
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            className="w-full h-24 grid place-items-center text-white/45 hover:text-white"
+          >
+            <div className="text-center">
+              <ImagePlus size={24} className="mx-auto text-emerald-glow/60" />
+              <div className="text-xs mt-1">{t.add.evidenceDropHint}</div>
+              <div className="font-mono text-[10px] uppercase tracking-[0.18em] mt-1 text-white/35">
+                {t.add.uploadHint}
+              </div>
+            </div>
+          </button>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+            {images.map((src, i) => (
+              <div
+                key={i}
+                className="relative aspect-square rounded-md overflow-hidden border border-white/10 bg-ink-200 group"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={src}
+                  alt={`Evidence ${i + 1}`}
+                  className="h-full w-full object-cover"
+                />
+                <div className="absolute inset-0 ring-1 ring-emerald-glow/20" />
+                <div className="absolute top-1 left-1 font-mono text-[9px] uppercase tracking-[0.22em] text-white/85 bg-black/60 px-1.5 py-0.5 rounded">
+                  EV-{(i + 1).toString().padStart(2, "0")}
+                </div>
+                <div className="absolute inset-x-1 bottom-1 flex items-center justify-between gap-1 opacity-0 group-hover:opacity-100 transition">
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => move(i, -1)}
+                      disabled={i === 0}
+                      className="h-6 w-6 grid place-items-center rounded bg-black/65 text-white/85 hover:text-white disabled:opacity-30"
+                      aria-label="up"
+                    >
+                      ←
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => move(i, 1)}
+                      disabled={i === images.length - 1}
+                      className="h-6 w-6 grid place-items-center rounded bg-black/65 text-white/85 hover:text-white disabled:opacity-30"
+                      aria-label="down"
+                    >
+                      →
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => removeAt(i)}
+                    className="h-6 w-6 grid place-items-center rounded bg-black/65 text-white/70 hover:text-warning"
+                    aria-label="remove"
+                  >
+                    <X size={11} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        multiple
+        className="hidden"
+        onChange={(e) => {
+          if (e.target.files?.length) void ingest(e.target.files);
+          if (e.currentTarget) e.currentTarget.value = "";
+        }}
       />
     </div>
   );

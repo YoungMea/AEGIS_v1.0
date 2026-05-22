@@ -1,0 +1,69 @@
+appId: com.aegis.desktop
+productName: AEGIS
+copyright: AEGIS Educational Project
+
+# Bundle just the desktop folder + production node_modules.
+files:
+  - "**/*"
+  - "!**/.DS_Store"
+  - "!**/*.md"
+
+# Output directory (gitignored — see ../.gitignore).
+directories:
+  buildResources: icons
+  output: dist
+
+# Branding
+asar: true
+compression: maximum
+
+# Windows (.exe installer)
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  icon: icons/icon.ico
+  artifactName: AEGIS-Setup-${version}-${arch}.${ext}
+  publisherName: AEGIS Educational Project
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowElevation: true
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: AEGIS
+
+# Linux (.AppImage portable + .deb for Ubuntu/Debian)
+linux:
+  target:
+    - target: AppImage
+      arch:
+        - x64
+    - target: deb
+      arch:
+        - x64
+  category: Network
+  icon: icons/icon.png
+  artifactName: AEGIS-${version}-${arch}.${ext}
+  synopsis: AEGIS Classified Intelligence Platform
+  description: |
+    AEGIS is a cinematic OSINT/intelligence dossier system with encrypted
+    storage, Telegram-based authentication, and an internal operative
+    messaging channel.
+  desktop:
+    Name: AEGIS
+    Comment: Classified Intelligence Platform
+    Categories: Network;Security;Office
+
+# macOS (.dmg) — optional, included so a future cross-build can target it.
+mac:
+  target:
+    - target: dmg
+      arch:
+        - universal
+  category: public.app-category.utilities
+  icon: icons/icon.png
+  artifactName: AEGIS-${version}.${ext}

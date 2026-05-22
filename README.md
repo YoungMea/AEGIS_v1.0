@@ -367,10 +367,28 @@ Mount `/app/data` to a persistent volume for the SQLite file.
 
 ---
 
+## Desktop client (beta)
+
+A native Electron shell lives in [`desktop/`](./desktop). It bundles the
+AEGIS web experience inside a chrome-less window with a custom splash
+screen, single-instance handling and a friendly offline page.
+
+```bash
+cd desktop
+npm install
+npm run build:win        # → dist/AEGIS-Setup-1.0.0-beta.1-x64.exe
+npm run build:linux      # → AEGIS-…-x64.AppImage and aegis_…_amd64.deb
+```
+
+Cross-building targets needs the matching toolchain (Wine for Windows
+installers from Linux, a Mac for `.dmg`); the simplest path is one target
+per native OS.
+
+---
+
 ## Roadmap
 
-- HawkEye OSINT module (Sherlock-powered username scan)
-- Map view of dossier locations
+- HawkEye OSINT module (Sherlock-powered username scan)- Map view of dossier locations
 - Per-user encryption keys (key escrow / recovery)
 - Real PDF rendering (puppeteer / pdfkit)
 - WebSocket presence and typing indicators in AntChat

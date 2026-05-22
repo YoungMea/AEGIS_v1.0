@@ -44,6 +44,7 @@ export interface DossierRow {
   activity_timeline: string | null;
   connections: string | null;
   additional_evidence: string | null;
+  evidence_images: string | null;
   risk_level: string;
   tags: string | null;
   created_at: number;
@@ -70,6 +71,7 @@ export interface Dossier {
   activityTimeline: { date: string; event: string }[];
   connections: { name: string; relation: string }[];
   additionalEvidence: string | null;
+  evidenceImages: string[];
   riskLevel: string;
   tags: string[];
   createdAt: number;
@@ -121,6 +123,8 @@ export function rowToDossier(r: DossierRow): Dossier {
         aad,
       ) ?? [],
     additionalEvidence: decryptNullable(r.additional_evidence, aad),
+    evidenceImages:
+      decryptJson<string[]>(r.evidence_images ?? "", aad) ?? [],
     riskLevel: r.risk_level,
     tags: parseTagsOrLegacy(r.tags),
     createdAt: r.created_at,
@@ -157,9 +161,9 @@ export function createDossier(ownerId: string, input: DossierInput): Dossier {
         id, owner_id, classification, status, target_image,
         full_name, alias, phone, email, country, city, address,
         social_media, known_accounts, notes, investigation_summary,
-        activity_timeline, connections, additional_evidence,
+        activity_timeline, connections, additional_evidence, evidence_images,
         risk_level, tags, created_at, updated_at
-     ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+     ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
   ).run(
     id,
     ownerId,
@@ -180,6 +184,7 @@ export function createDossier(ownerId: string, input: DossierInput): Dossier {
     encryptJson(input.activityTimeline ?? [], aad),
     encryptJson(input.connections ?? [], aad),
     encryptNullable(input.additionalEvidence ?? null, aad),
+    encryptJson(input.evidenceImages ?? [], aad),
     input.riskLevel,
     JSON.stringify(input.tags ?? []),
     now,
@@ -204,7 +209,7 @@ export function updateDossier(
         classification = ?, status = ?, target_image = ?,
         full_name = ?, alias = ?, phone = ?, email = ?, country = ?, city = ?, address = ?,
         social_media = ?, known_accounts = ?, notes = ?, investigation_summary = ?,
-        activity_timeline = ?, connections = ?, additional_evidence = ?,
+        activity_timeline = ?, connections = ?, additional_evidence = ?, evidence_images = ?,
         risk_level = ?, tags = ?, updated_at = ?
      WHERE id = ? AND owner_id = ?`,
   ).run(
@@ -225,6 +230,7 @@ export function updateDossier(
     encryptJson(input.activityTimeline ?? [], aad),
     encryptJson(input.connections ?? [], aad),
     encryptNullable(input.additionalEvidence ?? null, aad),
+    encryptJson(input.evidenceImages ?? [], aad),
     input.riskLevel,
     JSON.stringify(input.tags ?? []),
     now,
