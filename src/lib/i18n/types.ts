@@ -51,6 +51,7 @@ export interface Translation {
     find: string;
     news: string;
     support: string;
+    chat: string;
   };
   profile: {
     operative: string;
@@ -289,6 +290,7 @@ export interface Translation {
     statusActive: string;
     operative: string;
     clear: string;
+    message: string;
   };
   news: {
     badge: string;
@@ -300,7 +302,42 @@ export interface Translation {
     items: {
       aegisDemo: NewsItem;
       hawkeye: NewsItem;
+      noLook: NewsItem;
+      antChat: NewsItem;
     };
+  };
+  chat: {
+    badge: string;
+    titlePart1: string;
+    titlePart2: string;
+    subtitle: string;
+    encryptedNote: string;
+    listEmpty: string;
+    listLoading: string;
+    threadEmpty: string;
+    pickConversation: string;
+    findOperative: string;
+    findOperativePlaceholder: string;
+    newConversation: string;
+    typePlaceholder: string;
+    send: string;
+    attach: string;
+    shareDossier: string;
+    pickDossier: string;
+    noDossiers: string;
+    fileTooBig: string;
+    sendError: string;
+    you: string;
+    today: string;
+    yesterday: string;
+    unread: string;
+    encrypted: string;
+    download: string;
+    dossierShared: string;
+    dossierClassification: string;
+    dossierRisk: string;
+    online: string;
+    backToList: string;
   };
   support: {
     badge: string;

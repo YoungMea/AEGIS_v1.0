@@ -13,6 +13,7 @@ import {
   ShieldCheck,
   Newspaper,
   Headphones,
+  MessageSquare,
 } from "lucide-react";
 import { Logo } from "@/components/ui/Logo";
 import { StatusBar } from "@/components/ui/StatusBar";
@@ -29,6 +30,7 @@ import { AddSection } from "./sections/AddSection";
 import { FindFriendsSection } from "./sections/FindFriendsSection";
 import { NewsSection } from "./sections/NewsSection";
 import { SupportSection } from "./sections/SupportSection";
+import { ChatSection } from "./sections/ChatSection";
 import { ChangePasswordModal } from "./modals/ChangePasswordModal";
 import { DossierViewModal } from "./modals/DossierViewModal";
 
@@ -52,6 +54,7 @@ function DashboardInner({ user, initialDossiers }: Props) {
   const [editingDossier, setEditingDossier] = useState<Dossier | null>(null);
   const [viewingDossier, setViewingDossier] = useState<Dossier | null>(null);
   const [showChangePw, setShowChangePw] = useState(false);
+  const [startChatPeerId, setStartChatPeerId] = useState<string | null>(null);
 
   const router = useRouter();
   const toast = useToast();
@@ -161,7 +164,30 @@ function DashboardInner({ user, initialDossiers }: Props) {
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.25 }}
             >
-              <FindFriendsSection currentUid={user.uid} />
+              <FindFriendsSection
+                currentUid={user.uid}
+                onMessageOperative={(id) => {
+                  setStartChatPeerId(id);
+                  setSection("chat");
+                }}
+              />
+            </motion.div>
+          )}
+
+          {section === "chat" && (
+            <motion.div
+              key="chat"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.25 }}
+            >
+              <ChatSection
+                user={user}
+                dossiers={dossiers}
+                openPeerId={startChatPeerId}
+                onConsumed={() => setStartChatPeerId(null)}
+              />
             </motion.div>
           )}
 
@@ -245,6 +271,7 @@ function TopBar({
     { id: "database", label: t.nav.database, icon: <Folder size={14} /> },
     { id: "add", label: t.nav.add, icon: <FilePlus size={14} /> },
     { id: "find", label: t.nav.find, icon: <Search size={14} /> },
+    { id: "chat", label: t.nav.chat, icon: <MessageSquare size={14} /> },
     { id: "news", label: t.nav.news, icon: <Newspaper size={14} /> },
     { id: "support", label: t.nav.support, icon: <Headphones size={14} /> },
   ];

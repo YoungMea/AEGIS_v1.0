@@ -1,8 +1,27 @@
 /**
- * Dossier data access layer.
+ * Dossier data access layer with NoLook encryption.
+ *
+ * The following columns hold sensitive intel and are encrypted at rest:
+ *   phone, email, address, social_media, known_accounts, notes,
+ *   investigation_summary, activity_timeline, connections,
+ *   additional_evidence, target_image
+ *
+ * `full_name`, `alias`, `country`, `city`, `tags`, `classification`,
+ * `status`, `risk_level`, `created_at`, `updated_at` stay in plaintext to
+ * keep listing/search fast. None of them is by itself usable to identify a
+ * specific subject without the encrypted fields.
+ *
+ * AAD is bound to the dossier id so a stolen ciphertext can't be remapped
+ * to a different row.
  */
 import { getDb } from "./db";
 import { cuid } from "./ids";
+import {
+  encryptJson,
+  decryptJson,
+  encryptNullable,
+  decryptNullable,
+} from "./noLook";
 import type { DossierInput } from "./validation";
 
 export interface DossierRow {
@@ -57,44 +76,53 @@ export interface Dossier {
   updatedAt: number;
 }
 
-function parseJson<T>(s: string | null, fallback: T): T {
-  if (!s) return fallback;
+function aadFor(id: string) {
+  return `dossier:${id}`;
+}
+
+function parseTagsOrLegacy(s: string | null): string[] {
+  if (!s) return [];
   try {
-    return JSON.parse(s) as T;
+    return JSON.parse(s) as string[];
   } catch {
-    return fallback;
+    return [];
   }
 }
 
 export function rowToDossier(r: DossierRow): Dossier {
+  const aad = aadFor(r.id);
   return {
     id: r.id,
     ownerId: r.owner_id,
     classification: r.classification,
     status: r.status,
-    targetImage: r.target_image,
+    targetImage: decryptNullable(r.target_image, aad),
     fullName: r.full_name,
     alias: r.alias,
-    phone: r.phone,
-    email: r.email,
+    phone: decryptNullable(r.phone, aad),
+    email: decryptNullable(r.email, aad),
     country: r.country,
     city: r.city,
-    address: r.address,
-    socialMedia: parseJson<string[]>(r.social_media, []),
-    knownAccounts: parseJson<string[]>(r.known_accounts, []),
-    notes: r.notes,
-    investigationSummary: r.investigation_summary,
-    activityTimeline: parseJson<{ date: string; event: string }[]>(
-      r.activity_timeline,
-      [],
-    ),
-    connections: parseJson<{ name: string; relation: string }[]>(
-      r.connections,
-      [],
-    ),
-    additionalEvidence: r.additional_evidence,
+    address: decryptNullable(r.address, aad),
+    socialMedia:
+      decryptJson<string[]>(r.social_media ?? "", aad) ?? [],
+    knownAccounts:
+      decryptJson<string[]>(r.known_accounts ?? "", aad) ?? [],
+    notes: decryptNullable(r.notes, aad),
+    investigationSummary: decryptNullable(r.investigation_summary, aad),
+    activityTimeline:
+      decryptJson<{ date: string; event: string }[]>(
+        r.activity_timeline ?? "",
+        aad,
+      ) ?? [],
+    connections:
+      decryptJson<{ name: string; relation: string }[]>(
+        r.connections ?? "",
+        aad,
+      ) ?? [],
+    additionalEvidence: decryptNullable(r.additional_evidence, aad),
     riskLevel: r.risk_level,
-    tags: parseJson<string[]>(r.tags, []),
+    tags: parseTagsOrLegacy(r.tags),
     createdAt: r.created_at,
     updatedAt: r.updated_at,
   };
@@ -122,6 +150,8 @@ export function createDossier(ownerId: string, input: DossierInput): Dossier {
   const db = getDb();
   const id = cuid();
   const now = Date.now();
+  const aad = aadFor(id);
+
   db.prepare(
     `INSERT INTO dossiers (
         id, owner_id, classification, status, target_image,
@@ -135,21 +165,21 @@ export function createDossier(ownerId: string, input: DossierInput): Dossier {
     ownerId,
     input.classification,
     input.status,
-    input.targetImage ?? null,
+    encryptNullable(input.targetImage ?? null, aad),
     input.fullName ?? null,
     input.alias ?? null,
-    input.phone ?? null,
-    input.email ?? null,
+    encryptNullable(input.phone ?? null, aad),
+    encryptNullable(input.email ?? null, aad),
     input.country ?? null,
     input.city ?? null,
-    input.address ?? null,
-    JSON.stringify(input.socialMedia ?? []),
-    JSON.stringify(input.knownAccounts ?? []),
-    input.notes ?? null,
-    input.investigationSummary ?? null,
-    JSON.stringify(input.activityTimeline ?? []),
-    JSON.stringify(input.connections ?? []),
-    input.additionalEvidence ?? null,
+    encryptNullable(input.address ?? null, aad),
+    encryptJson(input.socialMedia ?? [], aad),
+    encryptJson(input.knownAccounts ?? [], aad),
+    encryptNullable(input.notes ?? null, aad),
+    encryptNullable(input.investigationSummary ?? null, aad),
+    encryptJson(input.activityTimeline ?? [], aad),
+    encryptJson(input.connections ?? [], aad),
+    encryptNullable(input.additionalEvidence ?? null, aad),
     input.riskLevel,
     JSON.stringify(input.tags ?? []),
     now,
@@ -167,6 +197,8 @@ export function updateDossier(
   const existing = getDossier(id, ownerId);
   if (!existing) return null;
   const now = Date.now();
+  const aad = aadFor(id);
+
   db.prepare(
     `UPDATE dossiers SET
         classification = ?, status = ?, target_image = ?,
@@ -178,21 +210,21 @@ export function updateDossier(
   ).run(
     input.classification,
     input.status,
-    input.targetImage ?? null,
+    encryptNullable(input.targetImage ?? null, aad),
     input.fullName ?? null,
     input.alias ?? null,
-    input.phone ?? null,
-    input.email ?? null,
+    encryptNullable(input.phone ?? null, aad),
+    encryptNullable(input.email ?? null, aad),
     input.country ?? null,
     input.city ?? null,
-    input.address ?? null,
-    JSON.stringify(input.socialMedia ?? []),
-    JSON.stringify(input.knownAccounts ?? []),
-    input.notes ?? null,
-    input.investigationSummary ?? null,
-    JSON.stringify(input.activityTimeline ?? []),
-    JSON.stringify(input.connections ?? []),
-    input.additionalEvidence ?? null,
+    encryptNullable(input.address ?? null, aad),
+    encryptJson(input.socialMedia ?? [], aad),
+    encryptJson(input.knownAccounts ?? [], aad),
+    encryptNullable(input.notes ?? null, aad),
+    encryptNullable(input.investigationSummary ?? null, aad),
+    encryptJson(input.activityTimeline ?? [], aad),
+    encryptJson(input.connections ?? [], aad),
+    encryptNullable(input.additionalEvidence ?? null, aad),
     input.riskLevel,
     JSON.stringify(input.tags ?? []),
     now,

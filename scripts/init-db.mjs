@@ -78,6 +78,29 @@ db.exec(`
     window_start INTEGER NOT NULL,
     PRIMARY KEY (bucket, key)
   );
+
+  CREATE TABLE IF NOT EXISTS chat_messages (
+    id                TEXT PRIMARY KEY,
+    conversation_key  TEXT NOT NULL,
+    sender_id         TEXT NOT NULL,
+    recipient_id      TEXT NOT NULL,
+    kind              TEXT NOT NULL,
+    body              TEXT,
+    file_name         TEXT,
+    file_mime         TEXT,
+    file_size         INTEGER,
+    file_data         TEXT,
+    dossier_ref       TEXT,
+    dossier_summary   TEXT,
+    created_at        INTEGER NOT NULL,
+    read_at           INTEGER,
+    FOREIGN KEY (sender_id)    REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (recipient_id) REFERENCES users(id) ON DELETE CASCADE
+  );
+  CREATE INDEX IF NOT EXISTS idx_chat_conv   ON chat_messages(conversation_key, created_at DESC);
+  CREATE INDEX IF NOT EXISTS idx_chat_inbox  ON chat_messages(recipient_id, created_at DESC);
+  CREATE INDEX IF NOT EXISTS idx_chat_outbox ON chat_messages(sender_id, created_at DESC);
+  CREATE INDEX IF NOT EXISTS idx_chat_unread ON chat_messages(recipient_id, read_at);
 `);
 
 console.log(`✓ Database initialized at ${target}`);

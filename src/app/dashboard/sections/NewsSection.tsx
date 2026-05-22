@@ -12,13 +12,15 @@ import { useI18n } from "@/components/i18n/I18nProvider";
 import type { NewsItem } from "@/lib/i18n/types";
 import { cn } from "@/lib/utils";
 
-type ItemKey = "aegisDemo" | "hawkeye";
+type ItemKey = "aegisDemo" | "hawkeye" | "noLook" | "antChat";
 
 /**
  * Visual cover for each story. Cards have an oversized rounded-rectangle
  * cover that uses inline SVG so we don't need any image assets.
  */
 function CoverArt({ kind }: { kind: ItemKey }) {
+  if (kind === "noLook") return <NoLookCover />;
+  if (kind === "antChat") return <AntChatCover />;
   if (kind === "aegisDemo") {
     return (
       <svg
@@ -238,8 +240,10 @@ export function NewsSection() {
   const [active, setActive] = useState<ItemKey | null>(null);
 
   const items: { key: ItemKey; data: NewsItem }[] = [
-    { key: "aegisDemo", data: t.news.items.aegisDemo },
+    { key: "antChat", data: t.news.items.antChat },
+    { key: "noLook", data: t.news.items.noLook },
     { key: "hawkeye", data: t.news.items.hawkeye },
+    { key: "aegisDemo", data: t.news.items.aegisDemo },
   ];
 
   return (
@@ -491,5 +495,235 @@ function NewsModal({
         </div>
       </motion.div>
     </motion.div>
+  );
+}
+
+
+function NoLookCover() {
+  return (
+    <svg
+      viewBox="0 0 800 320"
+      className="block h-full w-full"
+      preserveAspectRatio="xMidYMid slice"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden
+    >
+      <defs>
+        <linearGradient id="nl-bg" x1="0" x2="1" y1="0" y2="1">
+          <stop offset="0%" stopColor="#06141B" />
+          <stop offset="100%" stopColor="#020608" />
+        </linearGradient>
+        <linearGradient id="nl-shield" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stopColor="#10F5A8" />
+          <stop offset="100%" stopColor="#0AC97F" />
+        </linearGradient>
+      </defs>
+      <rect width="800" height="320" fill="url(#nl-bg)" />
+
+      {/* matrix-style streaming columns */}
+      {Array.from({ length: 36 }).map((_, i) => (
+        <g key={i} transform={`translate(${i * 22 + 14} 0)`} opacity="0.45">
+          <rect
+            y="0"
+            width="2"
+            height={40 + ((i * 13) % 80)}
+            fill="rgba(16,245,168,0.18)"
+          />
+          <text
+            x="-3"
+            y={120 + ((i * 17) % 130)}
+            fill="rgba(16,245,168,0.45)"
+            fontFamily="ui-monospace, SFMono-Regular"
+            fontSize="9"
+          >
+            {((i * 73) & 1).toString(16)}
+            {((i * 91) & 1).toString(16)}
+          </text>
+          <text
+            x="-3"
+            y={210 + ((i * 23) % 60)}
+            fill="rgba(16,245,168,0.25)"
+            fontFamily="ui-monospace, SFMono-Regular"
+            fontSize="9"
+          >
+            {(i * 17 + 3).toString(16).padStart(2, "0")}
+          </text>
+        </g>
+      ))}
+
+      {/* shield on the right */}
+      <g transform="translate(580 160)">
+        <path
+          d="M0 -90 L70 -54 V14 C70 60 36 90 0 100 C-36 90 -70 60 -70 14 V-54 Z"
+          fill="rgba(16,245,168,0.08)"
+          stroke="url(#nl-shield)"
+          strokeWidth="2"
+        />
+        <path
+          d="M-26 6 L-6 28 L30 -22"
+          fill="none"
+          stroke="#10F5A8"
+          strokeWidth="3"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        {/* lock body */}
+        <g transform="translate(-26 32)">
+          <rect
+            x="0"
+            y="14"
+            width="52"
+            height="36"
+            rx="6"
+            fill="rgba(16,245,168,0.12)"
+            stroke="rgba(16,245,168,0.6)"
+            strokeWidth="1.5"
+          />
+          <path
+            d="M10 14 V4 a16 16 0 0 1 32 0 V14"
+            fill="none"
+            stroke="rgba(16,245,168,0.6)"
+            strokeWidth="1.5"
+          />
+        </g>
+      </g>
+
+      {/* title */}
+      <text
+        x="48"
+        y="84"
+        fill="#10F5A8"
+        fontFamily="ui-monospace, SFMono-Regular"
+        fontSize="11"
+        letterSpacing="6"
+        fontWeight="600"
+      >
+        SECURITY · LIVE
+      </text>
+      <text
+        x="48"
+        y="146"
+        fill="#FFFFFF"
+        fontFamily="Orbitron, sans-serif"
+        fontSize="46"
+        letterSpacing="6"
+        fontWeight="700"
+      >
+        NoLook
+      </text>
+      <text
+        x="48"
+        y="186"
+        fill="rgba(255,255,255,0.55)"
+        fontFamily="Orbitron, sans-serif"
+        fontSize="14"
+        letterSpacing="4"
+      >
+        AES-256-GCM AT-REST ENCRYPTION
+      </text>
+      <text
+        x="48"
+        y="270"
+        fill="rgba(255,255,255,0.35)"
+        fontFamily="ui-monospace, SFMono-Regular"
+        fontSize="11"
+        letterSpacing="4"
+      >
+        seal ▸ store ▸ unseal ▸ verify
+      </text>
+    </svg>
+  );
+}
+
+function AntChatCover() {
+  return (
+    <svg
+      viewBox="0 0 800 320"
+      className="block h-full w-full"
+      preserveAspectRatio="xMidYMid slice"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden
+    >
+      <defs>
+        <radialGradient id="ac-bg" cx="20%" cy="100%" r="100%">
+          <stop offset="0%" stopColor="#0E2030" />
+          <stop offset="60%" stopColor="#060B14" />
+          <stop offset="100%" stopColor="#02050A" />
+        </radialGradient>
+      </defs>
+      <rect width="800" height="320" fill="url(#ac-bg)" />
+
+      {/* speech bubbles on the right */}
+      <g transform="translate(440 70)" fontFamily="ui-monospace, SFMono-Regular" fontSize="11">
+        {/* incoming */}
+        <g>
+          <rect x="0" y="0" width="160" height="36" rx="14" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.12)" />
+          <text x="14" y="22" fill="rgba(255,255,255,0.7)">target spotted ▸ EU-N3</text>
+        </g>
+        {/* outgoing emerald */}
+        <g transform="translate(60 60)">
+          <rect x="0" y="0" width="220" height="36" rx="14" fill="rgba(16,245,168,0.12)" stroke="rgba(16,245,168,0.4)" />
+          <text x="14" y="22" fill="#10F5A8">received · uploading evidence…</text>
+        </g>
+        {/* file chip */}
+        <g transform="translate(40 120)">
+          <rect x="0" y="0" width="200" height="58" rx="10" fill="rgba(255,255,255,0.04)" stroke="rgba(16,245,168,0.35)" />
+          <rect x="14" y="14" width="30" height="30" rx="4" fill="rgba(16,245,168,0.18)" stroke="rgba(16,245,168,0.5)" />
+          <text x="22" y="33" fill="#10F5A8" fontWeight="700">.pdf</text>
+          <text x="56" y="22" fill="rgba(255,255,255,0.85)">evidence_03.pdf</text>
+          <text x="56" y="38" fill="rgba(255,255,255,0.45)">1.3 MB · ENCRYPTED</text>
+        </g>
+        {/* dossier chip */}
+        <g transform="translate(120 188)">
+          <rect x="0" y="0" width="200" height="42" rx="10" fill="rgba(255,77,77,0.06)" stroke="rgba(255,77,77,0.4)" />
+          <text x="14" y="18" fill="#FF8C8C" fontSize="9" letterSpacing="3">DOSSIER · CLASSIFIED</text>
+          <text x="14" y="33" fill="rgba(255,255,255,0.85)">AGS-7F2A0E81</text>
+        </g>
+      </g>
+
+      {/* title */}
+      <text
+        x="48"
+        y="84"
+        fill="#10F5A8"
+        fontFamily="ui-monospace, SFMono-Regular"
+        fontSize="11"
+        letterSpacing="6"
+        fontWeight="600"
+      >
+        MODULE · LIVE
+      </text>
+      <text
+        x="48"
+        y="146"
+        fill="#FFFFFF"
+        fontFamily="Orbitron, sans-serif"
+        fontSize="48"
+        letterSpacing="6"
+        fontWeight="700"
+      >
+        AntChat
+      </text>
+      <text
+        x="48"
+        y="186"
+        fill="rgba(255,255,255,0.55)"
+        fontFamily="Orbitron, sans-serif"
+        fontSize="14"
+        letterSpacing="4"
+      >
+        ENCRYPTED OPERATIVE COMMS
+      </text>
+      <text
+        x="48"
+        y="270"
+        fill="rgba(255,255,255,0.35)"
+        fontFamily="ui-monospace, SFMono-Regular"
+        fontSize="11"
+        letterSpacing="4"
+      >
+        text ▸ files ▸ dossier shares
+      </text>
+    </svg>
   );
 }

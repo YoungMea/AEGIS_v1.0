@@ -148,6 +148,32 @@ function init(db: Database.Database) {
       window_start INTEGER NOT NULL,
       PRIMARY KEY (bucket, key)
     );
+
+    -- AntChat: every message is a row. Conversations are derived by ordering
+    -- (sender_id, recipient_id) into a deterministic conversation_key so a
+    -- single composite index can serve both inbox + thread views.
+    CREATE TABLE IF NOT EXISTS chat_messages (
+      id                TEXT PRIMARY KEY,
+      conversation_key  TEXT NOT NULL,   -- min(uidA, uidB) || ':' || max(uidA, uidB)
+      sender_id         TEXT NOT NULL,
+      recipient_id      TEXT NOT NULL,
+      kind              TEXT NOT NULL,   -- 'text' | 'file' | 'dossier'
+      body              TEXT,            -- encrypted with NoLook (ciphertext or null for non-text kinds)
+      file_name         TEXT,            -- encrypted
+      file_mime         TEXT,            -- plaintext, generic mime
+      file_size         INTEGER,         -- plaintext, in bytes
+      file_data         TEXT,            -- encrypted base64 payload (capped to 2 MB)
+      dossier_ref       TEXT,            -- encrypted, dossier id snapshot
+      dossier_summary   TEXT,            -- encrypted JSON snapshot for read-only viewing
+      created_at        INTEGER NOT NULL,
+      read_at           INTEGER,
+      FOREIGN KEY (sender_id)    REFERENCES users(id) ON DELETE CASCADE,
+      FOREIGN KEY (recipient_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+    CREATE INDEX IF NOT EXISTS idx_chat_conv     ON chat_messages(conversation_key, created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_chat_inbox    ON chat_messages(recipient_id, created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_chat_outbox   ON chat_messages(sender_id, created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_chat_unread   ON chat_messages(recipient_id, read_at);
   `);
 
   // For older databases — bring missing columns in.

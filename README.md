@@ -1,25 +1,35 @@
 # AEGIS — Classified OSINT Intelligence Platform
 
-A cinematic full-stack OSINT/intelligence dossier system built for educational use.
-Looks and feels like a confidential agency console: dark tactical UI, secure
-authentication, OTP enrollment, and a fully-featured investigation document
-editor with realistic paper textures, classification stamps, and barcodes.
+A cinematic full-stack OSINT/intelligence dossier system built for educational
+use. Looks and feels like a confidential agency console: dark tactical UI,
+secure authentication, OTP enrollment, encrypted dossiers, and a built-in
+operative-to-operative chat channel.
 
 > ⚠️ **Educational only.** This is not a production intelligence tool. Use it
-> to learn full-stack development, authentication flows, and design systems.
+> to learn full-stack development, authentication flows, encryption patterns,
+> and design systems.
 
 ---
 
 ## Features
 
 - 🔐 **JWT authentication** with bcrypt password hashing (cost factor 12 by default)
+- 🔒 **NoLook** — application-layer AES-256-GCM encryption for sensitive
+  dossier fields and every chat message
 - 📱 **OTP enrollment** via Telegram bot (default), SMS, or simulated mode
+- 🆔 **UID recovery** — forgot UID? Telegram-based reset
 - 🪪 **Numeric UID assignment** (8 digits) used as login identifier
 - 🗂 **Dossier management** with classification, risk level, status, tags
-- 🖋 **Realistic intelligence document editor** — paper textures, stamps, barcodes,
-  scanning animation, image upload, timeline, connections, and more
-- 👥 **Operative directory** — search other users by partial UID
-- 🛡 **Hardened API** — rate limiting, Zod validation, ownership scoping, no user enumeration
+- 🖋 **Realistic intelligence document editor** — paper textures, stamps,
+  barcodes, scanning animation, image upload, timeline, connections, more
+- 💬 **AntChat** — encrypted operative-to-operative messaging (text, files
+  up to 2 MB, dossier snapshots)
+- 👥 **Operative directory** — search by partial UID *or* codename
+- 📰 **In-app news bulletin** with cinematic SVG covers
+- 🎧 **Support** — Telegram-based help channel
+- 🌐 **Trilingual** — UZ / RU / EN, accessible without login
+- 🛡 **Hardened API** — rate limiting, Zod validation, ownership scoping,
+  no user enumeration on auth endpoints
 - 🌗 **Dark cinematic UI** — Tailwind, Framer Motion, Lucide icons, custom fonts
 - 📱 **Fully responsive** — mobile, tablet, desktop, ultrawide
 - 🖨 **Print/Export PDF** via the browser print pipeline
@@ -36,6 +46,7 @@ editor with realistic paper textures, classification stamps, and barcodes.
 | Backend | Next.js Route Handlers (Node runtime) |
 | Database | SQLite (`better-sqlite3`) — schema is Postgres-compatible |
 | Auth | JWT (HS256) + bcrypt + httpOnly cookies |
+| Encryption | AES-256-GCM via Node `crypto` (NoLook layer) |
 | Validation | Zod |
 
 The schema is intentionally flat so it can be migrated to PostgreSQL or MongoDB
@@ -64,13 +75,51 @@ Open http://localhost:3000
 
 You will land on the **Login** screen. Click **Request enrollment** to:
 
-1. Enter a phone number (format `+12025550123`)
-2. Receive an OTP — in **simulate mode** the code is shown directly in the UI
-   *and* logged to the server console
-3. Set a strong password
-4. The system assigns a unique 8-digit UID and signs you into the dashboard
+1. Enter a phone number (format `+998901234567`)
+2. Open the verification bot once via the deep-link button
+3. Receive a 6-digit code in Telegram
+4. Set a strong password
+5. The system assigns a unique 8-digit UID and signs you into the dashboard
 
 To re-login later, use that UID + your password on the Login page.
+Forgot the UID? Tap **Forgot UID?** on login and recover it by phone.
+
+---
+
+## Modules
+
+### My Database
+Browse, filter and manage your classified dossiers as folders. Status, risk
+level and tag filters keep large archives organized.
+
+### Add Information
+A full-screen investigation document editor: image upload, sections for
+identity, geolocation, digital footprint, timeline, connections, evidence
+and tags. Save, archive, print or export to PDF. **Sensitive fields are
+encrypted on disk via NoLook.**
+
+### Find Friends
+Look up other operatives by partial UID *or* codename. Click any result to
+jump straight into AntChat with that operative.
+
+### AntChat
+Encrypted messaging. Three message kinds:
+- **Text** (up to 4 000 characters)
+- **File** — pictures, PDFs, evidence up to **2 MB**, stored encrypted
+- **Dossier** — read-only snapshot of any of your dossiers
+
+Every body, attachment and snapshot is encrypted with NoLook before it
+touches disk. Conversations are sorted by latest activity and show unread
+counters.
+
+### News
+In-app bulletin with announcements, capability releases and module previews.
+Each story has a tactical SVG cover and a long-form modal with highlights.
+
+### Support
+Reach the team via the configured Telegram support bot, or paste a quick
+message into the form — the message is copied to clipboard so you can
+forward it inside Telegram.
 
 ---
 
@@ -82,6 +131,7 @@ All knobs live in `.env`. See `.env.example` for the full list.
 | --- | --- | --- |
 | `JWT_SECRET` | dev-only fallback | Secret used to sign session JWTs |
 | `JWT_EXPIRES_IN` | `7d` | Session lifetime |
+| `NOLOOK_KEY` | (derived from `JWT_SECRET`) | AES-256-GCM master key. **Set to a separate value in production** for defence-in-depth. |
 | `DATABASE_URL` | `./data/aegis.db` | SQLite file path |
 | `OTP_CHANNEL` | `telegram` | `telegram` · `sms` · `simulate` |
 | `OTP_LENGTH` | `6` | Digits in the OTP code |
@@ -90,13 +140,14 @@ All knobs live in `.env`. See `.env.example` for the full list.
 | `TELEGRAM_BOT_TOKEN` | — | Token from @BotFather |
 | `TELEGRAM_BOT_USERNAME` | — | Bot username (no `@`) |
 | `NEXT_PUBLIC_TELEGRAM_BOT_USERNAME` | — | Same value, exposed to the browser |
+| `NEXT_PUBLIC_TELEGRAM_SUPPORT_BOT_USERNAME` | — | Support bot username |
 | `TWILIO_ACCOUNT_SID` | — | Required when `OTP_CHANNEL=sms` |
 | `TWILIO_AUTH_TOKEN` | — | Required when `OTP_CHANNEL=sms` |
 | `TWILIO_FROM_NUMBER` | — | Required when `OTP_CHANNEL=sms` |
 
 ### Telegram channel (recommended)
 
-The default flow uses a Telegram bot to deliver OTPs. Steps:
+The default flow uses a Telegram bot to deliver OTPs.
 
 1. Create a bot via [@BotFather](https://t.me/BotFather) → `/newbot`.
 2. Copy the `123:ABC...` token and the bot's username.
@@ -109,39 +160,63 @@ The default flow uses a Telegram bot to deliver OTPs. Steps:
    ```
 4. Restart `npm run dev`.
 
-User flow:
-- The user enters their phone number on `/register`.
-- Step "Telegram" shows an **Open verification bot** button. It opens
-  `t.me/<bot>?start=<linkToken>`.
-- Once the user taps **START** in Telegram, the registration page detects
-  the bind (via short polling of `/api/auth/register/telegram-status`) and
-  enables **Send code**.
-- Tapping it pushes a 6-digit code into the user's bot DM. Verification
-  continues normally.
+The flow uses Telegram `getUpdates` polling, no webhook URL needed.
 
-How it works internally:
-- `verification_links` table stores ephemeral `link_token → chat_id` pairs.
-- `/api/auth/register/telegram-status` calls `getUpdates` on every poll and
-  resolves any pending tokens whose `/start <token>` message has arrived.
-- No webhook URL is required. The bot works fully through outbound calls,
-  so the app runs on `localhost` with no public URL needed.
+---
 
-### Switching to real SMS (Twilio)
+## Security model
 
-```env
-OTP_CHANNEL=sms
-TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-TWILIO_AUTH_TOKEN=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-TWILIO_FROM_NUMBER=+15551234567
-```
+AEGIS layers defences in depth.
 
-### Simulated mode (offline demos)
+### Authentication
+- **bcrypt** password hashing (configurable rounds, default 12).
+- **JWT (HS256)** sessions stored in an `httpOnly`, `SameSite=Lax`, `Secure`
+  (production) cookie.
+- **OTP** is bcrypt-hashed at rest, expires after `OTP_TTL_SECONDS`, capped
+  at 5 attempts per session.
+- **Login enumeration** is mitigated: a dummy bcrypt compare runs on user
+  miss to keep response timing similar.
+- **UID recovery** never reveals whether a phone is registered: the API
+  always issues a session id and silently no-ops the OTP delivery if no
+  account matches.
 
-```env
-OTP_CHANNEL=simulate
-```
+### NoLook — at-rest encryption
+- Authenticated **AES-256-GCM** with random 96-bit IV and per-record AAD.
+- Master key derived once via **scrypt** from `NOLOOK_KEY`
+  (or `JWT_SECRET` as a fallback).
+- Backwards compatible: legacy plaintext rows continue to read normally.
+- Encrypted fields:
+  - **Dossiers** — `phone`, `email`, `address`, `social_media`,
+    `known_accounts`, `notes`, `investigation_summary`,
+    `activity_timeline`, `connections`, `additional_evidence`,
+    `target_image`.
+  - **AntChat** — message body, file payload, file name, dossier reference,
+    dossier snapshot.
+- Indexed/listed columns (`full_name`, `alias`, `country`, `city`, `tags`,
+  `classification`, `status`, `risk_level`, timestamps) stay plaintext so
+  search and filtering remain fast.
+- Tampered ciphertext fails GCM verification and decrypt returns empty —
+  no silent data corruption.
 
-Codes are returned in the API response and shown in the UI.
+### Transport & access control
+- Rate limiting on every sensitive endpoint (login, OTP, recovery, chat send).
+- Zod input validation on every handler.
+- Ownership scoping: dossier reads/writes are restricted to
+  `owner_id = current user`.
+- Chat messages are always sent under the authenticated `senderId`; the
+  server never trusts a client-supplied sender.
+
+### What NoLook does *not* protect against
+- A full server compromise that leaks both the database **and** the
+  environment containing `NOLOOK_KEY`. Use a separate `NOLOOK_KEY`
+  (different from `JWT_SECRET`) and rotate them independently to raise
+  the bar.
+- Account takeover (an attacker logged in as a user can read their own
+  encrypted records — this is by design).
+
+> For real-world deployments, additionally enforce HTTPS, set strong
+> independent values for `JWT_SECRET` and `NOLOOK_KEY`, configure a
+> CDN/WAF, and review your threat model.
 
 ---
 
@@ -155,12 +230,16 @@ All routes return JSON. Authentication uses an httpOnly cookie named
 | Method | Endpoint | Auth | Body / Query |
 | --- | --- | --- | --- |
 | POST | `/api/auth/register/start` | — | `{ phone }` |
+| POST | `/api/auth/register/telegram-status?token=` | — | — |
+| POST | `/api/auth/register/telegram-send` | — | `{ linkToken }` |
 | POST | `/api/auth/register/verify` | — | `{ sessionId, code }` |
 | POST | `/api/auth/register/finalize` | — | `{ sessionId, password, displayName? }` |
 | POST | `/api/auth/login` | — | `{ uid, password }` |
 | POST | `/api/auth/logout` | ✅ | — |
 | GET  | `/api/auth/me` | ✅ | — |
 | POST | `/api/auth/change-password` | ✅ | `{ currentPassword, newPassword }` |
+| POST | `/api/auth/recover-uid/start` | — | `{ phone }` |
+| POST | `/api/auth/recover-uid/reveal` | — | `{ sessionId, code }` |
 
 ### Dossiers
 
@@ -176,7 +255,17 @@ All routes return JSON. Authentication uses an httpOnly cookie named
 
 | Method | Endpoint | Query |
 | --- | --- | --- |
-| GET | `/api/users/search` | `?uid=NNN` (numeric prefix, ≥2 digits) |
+| GET | `/api/users/search` | `?q=` (UID prefix or partial display name) |
+
+### AntChat
+
+| Method | Endpoint | Body |
+| --- | --- | --- |
+| GET  | `/api/chat/conversations` | — |
+| GET  | `/api/chat/threads/:peerId` | — |
+| POST | `/api/chat/messages` | `{ kind: "text", recipientId, text }` |
+|      |                     | `{ kind: "file", recipientId, file: {...} }` |
+|      |                     | `{ kind: "dossier", recipientId, dossierId }` |
 
 ---
 
@@ -189,12 +278,13 @@ All routes return JSON. Authentication uses an httpOnly cookie named
 │   └── init-db.mjs             # one-shot schema bootstrap
 ├── src/
 │   ├── app/
-│   │   ├── api/                # all route handlers
+│   │   ├── api/
 │   │   │   ├── auth/
+│   │   │   ├── chat/
 │   │   │   ├── dossiers/
 │   │   │   └── users/
-│   │   ├── dashboard/          # authenticated console
-│   │   │   ├── sections/       # Database / Add / Find Friends
+│   │   ├── dashboard/
+│   │   │   ├── sections/       # Database / Add / Find / Chat / News / Support
 │   │   │   └── modals/         # Change password, dossier viewer
 │   │   ├── login/
 │   │   ├── register/
@@ -202,60 +292,58 @@ All routes return JSON. Authentication uses an httpOnly cookie named
 │   │   ├── layout.tsx
 │   │   └── page.tsx            # redirect root to /login or /dashboard
 │   ├── components/
+│   │   ├── i18n/               # I18nProvider + LanguageSwitcher
 │   │   └── ui/                 # Logo, Toast, Boot, Strength, ...
 │   ├── lib/
 │   │   ├── api.ts              # JSON helpers
 │   │   ├── auth.ts             # JWT + cookies + session
+│   │   ├── chat.ts             # AntChat data access
+│   │   ├── constants.ts        # edge-safe constants
 │   │   ├── db.ts               # SQLite singleton + schema
-│   │   ├── dossier.ts          # data access for dossiers
+│   │   ├── dossier.ts          # data access (with NoLook)
 │   │   ├── env.ts              # typed env access
+│   │   ├── i18n/               # uz / ru / en dictionaries
 │   │   ├── ids.ts              # cuid + numeric UID generator
+│   │   ├── noLook.ts           # AES-256-GCM encryption layer
 │   │   ├── otp.ts              # OTP service
 │   │   ├── rate-limit.ts       # fixed-window limiter
+│   │   ├── telegram.ts         # bot helpers
 │   │   ├── utils.ts            # cn(), formatDate(), maskUid()
 │   │   └── validation.ts       # Zod schemas
 │   └── middleware.ts           # cookie gate for /dashboard
 ├── tailwind.config.ts
 ├── postcss.config.mjs
 ├── next.config.mjs
+├── render.yaml                 # Render Blueprint for one-click deploy
 ├── tsconfig.json
 └── package.json
 ```
 
 ---
 
-## Security Notes
-
-- **Password hashing** — bcrypt with configurable rounds; default 12.
-- **Session JWT** — signed with HS256, stored in `httpOnly`, `SameSite=Lax`,
-  `Secure` (production) cookie. Lifetime configurable.
-- **Login enumeration** — `/api/auth/login` runs a dummy bcrypt compare on miss
-  to keep response timing similar.
-- **Rate limiting** — fixed-window limiter keyed by IP and identifier on
-  sensitive endpoints (login, OTP start/verify).
-- **OTP storage** — codes are bcrypt-hashed, expire after `OTP_TTL_SECONDS`,
-  capped at 5 attempts per session.
-- **Input validation** — Zod on every handler; flattened errors returned.
-- **Ownership** — dossier reads/writes are scoped to `owner_id = current user`.
-- **CSRF** — `SameSite=Lax` cookie + JSON-only routes; no third-party form posts
-  are exposed.
-- **XSS** — React auto-escapes; user-controlled HTML is never rendered as raw.
-
-> For real-world deployments, additionally enforce HTTPS, set a strong
-> `JWT_SECRET`, configure a CDN/WAF, and review your threat model.
-
----
-
 ## Deployment
+
+### Render (recommended for free tier)
+
+A `render.yaml` blueprint is included. Push the repo to GitHub, click
+**New → Blueprint** in Render and connect your repo. Render will read the
+manifest and prompt you for the four sensitive env values:
+
+- `TELEGRAM_BOT_TOKEN`
+- `TELEGRAM_BOT_USERNAME`
+- `NEXT_PUBLIC_TELEGRAM_BOT_USERNAME`
+- `NEXT_PUBLIC_TELEGRAM_SUPPORT_BOT_USERNAME`
+
+Free tier note: SQLite lives on the container's ephemeral filesystem and
+the instance spins down after ~15 minutes of inactivity, so data is
+reset between cold starts. For real users, upgrade the plan and attach a
+persistent disk (the relevant block is commented in `render.yaml`).
 
 ### Vercel
 
-1. Push the repo to GitHub.
-2. Import into Vercel.
-3. Set environment variables (at minimum `JWT_SECRET`).
-4. **Important:** Vercel's filesystem is ephemeral. SQLite is fine for demos
-   but use a managed Postgres (Neon, Supabase, Railway) in production. Swap the
-   driver in `src/lib/db.ts` accordingly.
+Vercel's filesystem is also ephemeral. Move the database to a hosted
+Postgres (Neon, Supabase, Railway) and swap the driver in `src/lib/db.ts`
+to keep data across deploys.
 
 ### Self-hosted (Docker example)
 
@@ -279,14 +367,13 @@ Mount `/app/data` to a persistent volume for the SQLite file.
 
 ---
 
-## Roadmap Ideas
+## Roadmap
 
-- File attachments (S3-compatible store)
+- HawkEye OSINT module (Sherlock-powered username scan)
 - Map view of dossier locations
-- Encrypted-at-rest dossier blobs (`crypto.subtle` per-user keys)
-- Admin role + audit log
-- Real PDF rendering (puppeteer or pdfkit)
-- WebSocket presence indicators
+- Per-user encryption keys (key escrow / recovery)
+- Real PDF rendering (puppeteer / pdfkit)
+- WebSocket presence and typing indicators in AntChat
 
 ---
 

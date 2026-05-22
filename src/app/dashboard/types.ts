@@ -7,7 +7,13 @@ export interface SessionUserDto {
   createdAt: number;
 }
 
-export type DashboardSection = "database" | "add" | "find" | "news" | "support";
+export type DashboardSection =
+  | "database"
+  | "add"
+  | "find"
+  | "chat"
+  | "news"
+  | "support";
 
 export interface UserSearchResult {
   id: string;

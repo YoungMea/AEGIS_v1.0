@@ -1,12 +1,20 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Loader2, UserSearch, Hash } from "lucide-react";
+import { Search, Loader2, UserSearch, Hash, MessageSquare } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { useI18n } from "@/components/i18n/I18nProvider";
 import type { UserSearchResult } from "../types";
 
-export function FindFriendsSection({ currentUid }: { currentUid: string }) {
+interface FindProps {
+  currentUid: string;
+  onMessageOperative?: (id: string) => void;
+}
+
+export function FindFriendsSection({
+  currentUid,
+  onMessageOperative,
+}: FindProps) {
   const { t } = useI18n();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<UserSearchResult[]>([]);
@@ -26,7 +34,7 @@ export function FindFriendsSection({ currentUid }: { currentUid: string }) {
     debounceRef.current = setTimeout(async () => {
       try {
         const res = await fetch(
-          `/api/users/search?uid=${encodeURIComponent(query.trim())}`,
+          `/api/users/search?q=${encodeURIComponent(query.trim())}`,
         );
         if (res.ok) {
           const data = await res.json();
@@ -69,11 +77,10 @@ export function FindFriendsSection({ currentUid }: { currentUid: string }) {
           <input
             value={query}
             onChange={(e) =>
-              setQuery(e.target.value.replace(/\D/g, "").slice(0, 12))
+              setQuery(e.target.value.slice(0, 80))
             }
-            inputMode="numeric"
             placeholder={t.find.placeholder}
-            className="flex-1 bg-transparent border-0 outline-none px-2 py-2.5 font-mono tracking-[0.22em] text-base"
+            className="flex-1 bg-transparent border-0 outline-none px-2 py-2.5 font-mono tracking-[0.18em] text-base"
             autoFocus
           />
           {query && (
@@ -140,6 +147,11 @@ export function FindFriendsSection({ currentUid }: { currentUid: string }) {
                   <ResultCard
                     user={u}
                     isSelf={u.uid === currentUid}
+                    onMessage={
+                      onMessageOperative && u.uid !== currentUid
+                        ? () => onMessageOperative(u.id)
+                        : undefined
+                    }
                   />
                 </motion.li>
               ))}
@@ -154,9 +166,11 @@ export function FindFriendsSection({ currentUid }: { currentUid: string }) {
 function ResultCard({
   user,
   isSelf,
+  onMessage,
 }: {
   user: UserSearchResult;
   isSelf: boolean;
+  onMessage?: () => void;
 }) {
   const { t } = useI18n();
   const initial =
@@ -194,6 +208,17 @@ function ResultCard({
           {t.find.enrolled} {formatDate(user.createdAt)}
         </div>
       </div>
+
+      {onMessage && (
+        <button
+          type="button"
+          onClick={onMessage}
+          className="btn-ghost h-9 px-3 text-[11px] uppercase tracking-[0.18em] font-mono shrink-0"
+        >
+          <MessageSquare size={12} />
+          <span className="hidden sm:inline">{t.find.message}</span>
+        </button>
+      )}
 
       <div className="hidden sm:flex flex-col items-end font-mono text-[10px] uppercase tracking-[0.22em] text-white/40">
         <span>{t.add.statusLabel}</span>
