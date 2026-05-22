@@ -2,6 +2,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
 import { Logo } from "./Logo";
+import { usePerf } from "@/components/perf/PerfProvider";
 
 const LINES = [
   "init: secure boot ▸ kernel/3.7.12-aegis",
@@ -14,13 +15,26 @@ const LINES = [
 /**
  * One-shot boot sequence shown before the dashboard mounts.
  * Stores a marker so it appears at most once per tab session.
+ *
+ * Skipped entirely on low-tier devices and when reduced-motion is on.
  */
 export function BootSequence({ onDone }: { onDone: () => void }) {
+  const { flags } = usePerf();
   const [step, setStep] = useState(0);
   const [hidden, setHidden] = useState(false);
 
   useEffect(() => {
-    if (typeof window !== "undefined" && sessionStorage.getItem("aegis:booted")) {
+    // On weak devices the cinematic boot is more frustrating than fun.
+    // Skip immediately and let the dashboard render.
+    if (!flags.rich) {
+      setHidden(true);
+      onDone();
+      return;
+    }
+    if (
+      typeof window !== "undefined" &&
+      sessionStorage.getItem("aegis:booted")
+    ) {
       setHidden(true);
       onDone();
       return;
@@ -39,7 +53,7 @@ export function BootSequence({ onDone }: { onDone: () => void }) {
       }
     }, 380);
     return () => clearInterval(id);
-  }, [onDone]);
+  }, [flags.rich, onDone]);
 
   return (
     <AnimatePresence>

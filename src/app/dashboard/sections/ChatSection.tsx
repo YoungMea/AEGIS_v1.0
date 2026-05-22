@@ -25,6 +25,7 @@ import {
 import { useI18n } from "@/components/i18n/I18nProvider";
 import { useToast } from "@/components/ui/Toast";
 import { cn, formatDate } from "@/lib/utils";
+import { useChatStream } from "@/hooks/useChatStream";
 import type { ChatMessage, ConversationSummary, DossierSnapshot } from "@/lib/chat";
 import type { Dossier } from "@/lib/dossier";
 import type { SessionUserDto, UserSearchResult } from "../types";
@@ -34,11 +35,18 @@ interface Props {
   dossiers: Dossier[];
   openPeerId?: string | null;
   onConsumed?: () => void;
+  onUnreadChange?: (n: number) => void;
 }
 
 type ActivePeer = ConversationSummary["peer"];
 
-export function ChatSection({ user, dossiers, openPeerId, onConsumed }: Props) {
+export function ChatSection({
+  user,
+  dossiers,
+  openPeerId,
+  onConsumed,
+  onUnreadChange,
+}: Props) {
   const { t } = useI18n();
   const toast = useToast();
 
@@ -48,16 +56,45 @@ export function ChatSection({ user, dossiers, openPeerId, onConsumed }: Props) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [threadLoading, setThreadLoading] = useState(false);
 
+  // Real-time push channel (SSE). When a message arrives:
+  //  - if it belongs to the open thread, append it inline
+  //  - always refresh the conversation list so previews & unread bubbles update
+  const activePeerIdRef = useRef<string | null>(null);
+  activePeerIdRef.current = activePeer?.id ?? null;
+
+  const { status: streamStatus, onlineSet } = useChatStream({
+    onMessage: (msg) => {
+      const peerId = activePeerIdRef.current;
+      if (
+        peerId &&
+        (msg.senderId === peerId || msg.recipientId === peerId)
+      ) {
+        setMessages((prev) => {
+          // Avoid duplicates if the optimistic POST response arrived first.
+          if (prev.some((m) => m.id === msg.id)) return prev;
+          return [...prev, msg];
+        });
+        // Mark inbound peers' messages read on arrival, since the thread is open.
+        if (msg.senderId === peerId) {
+          fetch(`/api/chat/threads/${encodeURIComponent(peerId)}`).catch(() => {});
+        }
+      }
+      // Always refresh list so previews and unread counters stay correct.
+      void refreshConversations();
+    },
+  });
+
   const refreshConversations = useCallback(async () => {
     try {
       const res = await fetch("/api/chat/conversations");
       if (!res.ok) return;
       const data = await res.json();
       setConversations(data.conversations);
+      onUnreadChange?.(data.unread ?? 0);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [onUnreadChange]);
 
   useEffect(() => {
     refreshConversations();
@@ -97,13 +134,16 @@ export function ChatSection({ user, dossiers, openPeerId, onConsumed }: Props) {
     };
   }, [openPeerId, conversations, onConsumed]);
 
-  // Poll list every 12s while idle so unread badges stay current.
+  // Lazy poll the conversation list as a fallback in case SSE stalls
+  // (Render cold-start, network blip, etc.). The interval is intentionally
+  // long because real-time updates already arrive over SSE.
   useEffect(() => {
-    const id = setInterval(refreshConversations, 12000);
+    const id = setInterval(refreshConversations, 60_000);
     return () => clearInterval(id);
   }, [refreshConversations]);
 
-  // Load thread whenever active peer changes; poll while open.
+  // Load thread whenever active peer changes. SSE pushes new messages, so
+  // we only need a single fetch on open + a slow safety poll.
   useEffect(() => {
     if (!activePeer) return;
     let cancelled = false;
@@ -121,7 +161,8 @@ export function ChatSection({ user, dossiers, openPeerId, onConsumed }: Props) {
         setMessages(data.messages);
       } finally {
         if (!cancelled) setThreadLoading(false);
-        if (!cancelled) timer = setTimeout(pull, 5000);
+        // Slow fallback in case the stream is asleep.
+        if (!cancelled) timer = setTimeout(pull, 30_000);
       }
     }
     pull();
@@ -287,14 +328,39 @@ export function ChatSection({ user, dossiers, openPeerId, onConsumed }: Props) {
                 conv={c}
                 active={activePeer?.id === c.peer.id}
                 youLabel={t.chat.you}
+                online={onlineSet.has(c.peer.id)}
                 onPick={() => openPeer(c.peer)}
               />
             ))}
           </div>
 
-          <div className="px-3 py-2 border-t border-white/[0.06] flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.22em] text-white/35">
-            <ShieldCheck size={11} className="text-emerald-glow" />
-            {t.chat.encryptedNote}
+          <div className="px-3 py-2 border-t border-white/[0.06] flex items-center justify-between gap-2 font-mono text-[10px] uppercase tracking-[0.22em] text-white/35">
+            <span className="flex items-center gap-1.5">
+              <ShieldCheck size={11} className="text-emerald-glow" />
+              {t.chat.encryptedNote}
+            </span>
+            <span
+              className={cn(
+                "flex items-center gap-1",
+                streamStatus === "open"
+                  ? "text-emerald-glow"
+                  : streamStatus === "connecting"
+                    ? "text-amber-glow"
+                    : "text-white/30",
+              )}
+            >
+              <span
+                className={cn(
+                  "h-1.5 w-1.5 rounded-full",
+                  streamStatus === "open"
+                    ? "bg-emerald-glow animate-pulseDot"
+                    : streamStatus === "connecting"
+                      ? "bg-amber-glow"
+                      : "bg-white/30",
+                )}
+              />
+              {streamStatus === "open" ? "LIVE" : streamStatus.toUpperCase()}
+            </span>
           </div>
         </aside>
 
@@ -314,6 +380,7 @@ export function ChatSection({ user, dossiers, openPeerId, onConsumed }: Props) {
               messages={messages}
               threadLoading={threadLoading}
               dossiers={dossiers}
+              peerOnline={onlineSet.has(activePeer.id)}
               onClose={() => setActivePeer(null)}
               onSendText={sendText}
               onSendFile={sendFile}
@@ -329,11 +396,13 @@ export function ChatSection({ user, dossiers, openPeerId, onConsumed }: Props) {
 function ConversationRow({
   conv,
   active,
+  online,
   onPick,
   youLabel,
 }: {
   conv: ConversationSummary;
   active: boolean;
+  online: boolean;
   onPick: () => void;
   youLabel: string;
 }) {
@@ -359,7 +428,16 @@ function ConversationRow({
           : "border-transparent hover:bg-white/[0.04]",
       )}
     >
-      <Avatar uid={conv.peer.uid} name={conv.peer.displayName} url={conv.peer.avatarUrl} />
+      <div className="relative shrink-0">
+        <Avatar uid={conv.peer.uid} name={conv.peer.displayName} url={conv.peer.avatarUrl} />
+        <span
+          className={cn(
+            "absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-ink-50",
+            online ? "bg-emerald-glow" : "bg-white/20",
+          )}
+          aria-label={online ? "online" : "offline"}
+        />
+      </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2 min-w-0">
           <span className="text-[13px] text-white truncate">
@@ -403,6 +481,7 @@ function Thread({
   messages,
   threadLoading,
   dossiers,
+  peerOnline,
   onClose,
   onSendText,
   onSendFile,
@@ -413,6 +492,7 @@ function Thread({
   messages: ChatMessage[];
   threadLoading: boolean;
   dossiers: Dossier[];
+  peerOnline: boolean;
   onClose: () => void;
   onSendText: (s: string) => void;
   onSendFile: (f: File) => void;
@@ -456,8 +536,17 @@ function Thread({
           </div>
           <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-white/40 flex items-center gap-2">
             <span>UID {peer.uid}</span>
-            <span className="h-1 w-1 rounded-full bg-emerald-glow animate-pulseDot" />
-            <span className="text-emerald-glow">{t.chat.online}</span>
+            <span
+              className={cn(
+                "h-1 w-1 rounded-full",
+                peerOnline
+                  ? "bg-emerald-glow animate-pulseDot"
+                  : "bg-white/30",
+              )}
+            />
+            <span className={peerOnline ? "text-emerald-glow" : "text-white/35"}>
+              {peerOnline ? t.chat.online : "OFFLINE"}
+            </span>
           </div>
         </div>
         <div className="badge-ok hidden sm:inline-flex">

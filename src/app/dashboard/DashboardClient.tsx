@@ -22,6 +22,7 @@ import { BootSequence } from "@/components/ui/BootSequence";
 import { ToastProvider, useToast } from "@/components/ui/Toast";
 import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
 import { useI18n } from "@/components/i18n/I18nProvider";
+import { useChatStream } from "@/hooks/useChatStream";
 import { cn } from "@/lib/utils";
 import type { Dossier } from "@/lib/dossier";
 import type { DashboardSection, SessionUserDto } from "./types";
@@ -55,6 +56,7 @@ function DashboardInner({ user, initialDossiers }: Props) {
   const [viewingDossier, setViewingDossier] = useState<Dossier | null>(null);
   const [showChangePw, setShowChangePw] = useState(false);
   const [startChatPeerId, setStartChatPeerId] = useState<string | null>(null);
+  const [chatUnread, setChatUnread] = useState(0);
 
   const router = useRouter();
   const toast = useToast();
@@ -67,6 +69,43 @@ function DashboardInner({ user, initialDossiers }: Props) {
       setDossiers(data.dossiers);
     }
   }, []);
+
+  // Poll unread chat count so the navbar badge stays current even when the
+  // user is on a different tab. The interval is intentionally lazy because
+  // the SSE stream below also bumps unread for instant updates.
+  useEffect(() => {
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+
+    async function pull() {
+      try {
+        const res = await fetch("/api/chat/conversations");
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!cancelled) setChatUnread(data.unread ?? 0);
+      } catch {
+        /* ignore */
+      } finally {
+        if (!cancelled) timer = setTimeout(pull, 60_000);
+      }
+    }
+    pull();
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+    };
+  }, []);
+
+  // Real-time bump: when a fresh message arrives on the SSE stream and the
+  // user isn't currently looking at the chat tab, bump the unread badge.
+  useChatStream({
+    onMessage: (msg) => {
+      if (msg.recipientId !== user.id) return; // only inbound matters
+      // If the chat section is open, ChatSection itself will mark it read.
+      // We optimistically increment otherwise.
+      setChatUnread((n) => n + 1);
+    },
+  });
 
   async function logout() {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -85,6 +124,7 @@ function DashboardInner({ user, initialDossiers }: Props) {
         onChangeSection={setSection}
         onChangePassword={() => setShowChangePw(true)}
         onLogout={logout}
+        chatUnread={chatUnread}
       />
 
       <main className="flex-1 px-4 sm:px-6 lg:px-8 pb-12 pt-2">
@@ -187,6 +227,7 @@ function DashboardInner({ user, initialDossiers }: Props) {
                 dossiers={dossiers}
                 openPeerId={startChatPeerId}
                 onConsumed={() => setStartChatPeerId(null)}
+                onUnreadChange={setChatUnread}
               />
             </motion.div>
           )}
@@ -248,12 +289,14 @@ function TopBar({
   onChangeSection,
   onChangePassword,
   onLogout,
+  chatUnread,
 }: {
   user: SessionUserDto;
   section: DashboardSection;
   onChangeSection: (s: DashboardSection) => void;
   onChangePassword: () => void;
   onLogout: () => void;
+  chatUnread: number;
 }) {
   const { t } = useI18n();
   const [profileOpen, setProfileOpen] = useState(false);
@@ -267,11 +310,23 @@ function TopBar({
     return () => document.removeEventListener("mousedown", onClick);
   }, [profileOpen]);
 
-  const tabs: { id: DashboardSection; label: string; icon: React.ReactNode }[] = [
+  const tabs: {
+    id: DashboardSection;
+    label: string;
+    icon: React.ReactNode;
+    accent?: boolean;
+    badge?: number;
+  }[] = [
     { id: "database", label: t.nav.database, icon: <Folder size={14} /> },
     { id: "add", label: t.nav.add, icon: <FilePlus size={14} /> },
     { id: "find", label: t.nav.find, icon: <Search size={14} /> },
-    { id: "chat", label: t.nav.chat, icon: <MessageSquare size={14} /> },
+    {
+      id: "chat",
+      label: t.nav.chat,
+      icon: <MessageSquare size={14} />,
+      accent: true,
+      badge: chatUnread,
+    },
     { id: "news", label: t.nav.news, icon: <Newspaper size={14} /> },
     { id: "support", label: t.nav.support, icon: <Headphones size={14} /> },
   ];
@@ -371,17 +426,45 @@ function TopBar({
       <nav className="px-2 sm:px-4 lg:px-6 pb-2 flex items-center gap-1 sm:gap-1.5 overflow-x-auto scroll-smooth">
         {tabs.map((tab) => {
           const active = section === tab.id;
+          const showBadge = tab.badge && tab.badge > 0;
           return (
             <button
               key={tab.id}
               onClick={() => onChangeSection(tab.id)}
               className={cn(
                 "relative flex items-center gap-2 px-3 sm:px-4 h-9 rounded-md text-[12px] sm:text-[13px] font-medium uppercase tracking-[0.14em] transition whitespace-nowrap shrink-0",
-                active ? "text-emerald-glow" : "text-white/55 hover:text-white",
+                active
+                  ? "text-emerald-glow"
+                  : tab.accent
+                    ? "text-white hover:text-emerald-glow"
+                    : "text-white/55 hover:text-white",
               )}
             >
               {tab.icon}
               <span>{tab.label}</span>
+
+              {/* "live" indicator on the AntChat tab when it's not the active one */}
+              {tab.accent && !active && (
+                <span className="hidden sm:inline-flex items-center gap-1 ml-1 font-mono text-[9px] tracking-[0.22em] text-emerald-glow/80">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-glow animate-pulseDot" />
+                  LIVE
+                </span>
+              )}
+
+              {/* unread bubble */}
+              {showBadge && (
+                <span
+                  className={cn(
+                    "ml-1 inline-flex h-[18px] min-w-[18px] px-1.5 items-center justify-center rounded-full font-mono text-[10px] leading-none",
+                    active
+                      ? "bg-emerald-glow text-ink-50"
+                      : "bg-emerald-glow text-ink-50 shadow-[0_0_10px_rgba(16,245,168,0.6)]",
+                  )}
+                >
+                  {tab.badge! > 99 ? "99+" : tab.badge}
+                </span>
+              )}
+
               {active && (
                 <motion.span
                   layoutId="tab-active"

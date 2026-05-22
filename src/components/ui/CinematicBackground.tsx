@@ -1,5 +1,6 @@
 "use client";
 import { motion } from "framer-motion";
+import { usePerf } from "@/components/perf/PerfProvider";
 
 /**
  * Full-bleed cinematic background:
@@ -7,34 +8,50 @@ import { motion } from "framer-motion";
  *  • animated grid drift
  *  • subtle scanline overlay
  *  • drifting "encrypted traffic" ticks (decorative)
+ *
+ * Reacts to PerfProvider — drops the heavy bits on low/medium tiers.
  */
 export function CinematicBackground({
   variant = "auth",
 }: {
   variant?: "auth" | "app";
 }) {
+  const { flags } = usePerf();
+
   return (
     <div
       aria-hidden
       className="pointer-events-none fixed inset-0 -z-10 overflow-hidden"
     >
-      {/* Base gradient */}
+      {/* Base gradient (cheap — keep on every tier) */}
       <div className="absolute inset-0 bg-[radial-gradient(80%_60%_at_50%_-10%,rgba(16,245,168,0.08),transparent_60%),radial-gradient(60%_60%_at_100%_100%,rgba(20,60,120,0.18),transparent_60%)]" />
 
-      {/* Drifting grid */}
-      <motion.div
-        initial={{ backgroundPositionY: 0 }}
-        animate={{ backgroundPositionY: 200 }}
-        transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
-        className="absolute inset-0 grid-overlay opacity-[0.5]"
-        style={{ ["--grid-size" as string]: variant === "auth" ? "40px" : "32px" }}
-      />
+      {/* Drifting grid (medium+) */}
+      {flags.grid &&
+        (flags.animations ? (
+          <motion.div
+            initial={{ backgroundPositionY: 0 }}
+            animate={{ backgroundPositionY: 200 }}
+            transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
+            className="absolute inset-0 grid-overlay opacity-[0.5]"
+            style={{
+              ["--grid-size" as string]: variant === "auth" ? "40px" : "32px",
+            }}
+          />
+        ) : (
+          <div
+            className="absolute inset-0 grid-overlay opacity-[0.35]"
+            style={{
+              ["--grid-size" as string]: variant === "auth" ? "40px" : "32px",
+            }}
+          />
+        ))}
 
-      {/* Vignette */}
+      {/* Vignette (cheap) */}
       <div className="absolute inset-0 bg-[radial-gradient(120%_80%_at_50%_50%,transparent_30%,rgba(0,0,0,0.65)_100%)]" />
 
-      {/* Top scan beam */}
-      {variant === "auth" && (
+      {/* Top scan beam — only the most expensive variant, rich tier only */}
+      {flags.rich && variant === "auth" && (
         <motion.div
           initial={{ y: "-30%" }}
           animate={{ y: "120%" }}
@@ -43,14 +60,16 @@ export function CinematicBackground({
         />
       )}
 
-      {/* Corner brackets */}
+      {/* Corner brackets (cheap) */}
       <Bracket pos="top-6 left-6 sm:top-8 sm:left-8" rotate={0} />
       <Bracket pos="top-6 right-6 sm:top-8 sm:right-8" rotate={90} />
       <Bracket pos="bottom-6 left-6 sm:bottom-8 sm:left-8" rotate={-90} />
       <Bracket pos="bottom-6 right-6 sm:bottom-8 sm:right-8" rotate={180} />
 
-      {/* Scanlines */}
-      <div className="absolute inset-0 bg-scanline opacity-[0.35] mix-blend-overlay" />
+      {/* Scanlines (high tier only) */}
+      {flags.scanlines && (
+        <div className="absolute inset-0 bg-scanline opacity-[0.35] mix-blend-overlay" />
+      )}
     </div>
   );
 }

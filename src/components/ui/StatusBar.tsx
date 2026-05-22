@@ -2,12 +2,15 @@
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { Wifi, ShieldCheck, Radio } from "lucide-react";
+import { usePerf } from "@/components/perf/PerfProvider";
 
 /**
  * Decorative status bar that mimics a tactical operations console.
- * Lightweight — purely cosmetic, no real telemetry.
+ * Lightweight — purely cosmetic, no real telemetry. On low-tier devices
+ * the second-tick interval is dropped to once per minute to spare CPU.
  */
 export function StatusBar() {
+  const { flags } = usePerf();
   const [time, setTime] = useState<string>("--:--:--");
   const [latency, setLatency] = useState<number>(42);
 
@@ -18,9 +21,11 @@ export function StatusBar() {
       setLatency(30 + Math.round(Math.random() * 24));
     };
     tick();
-    const i = setInterval(tick, 1000);
+    // Cheap on rich tier, very lazy on low tier.
+    const interval = flags.animations ? 1000 : 60000;
+    const i = setInterval(tick, interval);
     return () => clearInterval(i);
-  }, []);
+  }, [flags.animations]);
 
   return (
     <div className="flex items-center gap-3 sm:gap-5 text-[10px] font-mono uppercase tracking-[0.18em] text-white/50">

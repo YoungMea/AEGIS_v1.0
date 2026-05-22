@@ -5,7 +5,7 @@
 import type { NextRequest } from "next/server";
 import { jsonError, jsonOk, safeJson, fromZod } from "@/lib/api";
 import { requireUser } from "@/lib/auth";
-import { sendMessage, MAX_FILE_BYTES } from "@/lib/chat";
+import { sendMessageAndBroadcast as sendMessage, MAX_FILE_BYTES } from "@/lib/chat";
 import { rateLimit, clientIp } from "@/lib/rate-limit";
 import { z, ZodError } from "zod";
 

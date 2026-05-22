@@ -246,3 +246,49 @@ body {
   .paper { background: white !important; border: none !important; }
   .paper::before, .paper::after { display: none !important; }
 }
+
+/* =====================================================
+   Performance tiers
+   PerfProvider stamps <html data-perf="low|medium|high">.
+   Below we strip expensive effects on low/medium so jank
+   disappears on weak phones and old laptops.
+   ===================================================== */
+
+/* Low tier: kill every non-essential animation, blur and texture. */
+html[data-perf="low"] *,
+html[data-perf="low"] *::before,
+html[data-perf="low"] *::after {
+  animation: none !important;
+  transition-duration: 0ms !important;
+}
+html[data-perf="low"] [class*="backdrop-blur"],
+html[data-perf="low"] [class*="backdrop-filter"] {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+html[data-perf="low"] body {
+  background-image: none;
+  background-color: #05070a;
+}
+html[data-perf="low"] .paper::after {
+  display: none; /* expensive noise SVG */
+}
+
+/* Medium tier: cheap-but-impactful animations stay; expensive ones go. */
+html[data-perf="medium"] [class*="backdrop-blur-xl"] {
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+}
+html[data-perf="medium"] .paper::after {
+  display: none;
+}
+
+/* Honor OS-level reduced-motion regardless of detected tier. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}

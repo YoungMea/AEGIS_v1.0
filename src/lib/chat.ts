@@ -20,6 +20,7 @@ import {
   encryptString,
 } from "./noLook";
 import { getDossier } from "./dossier";
+import { broadcast } from "./chatBus";
 
 export const MAX_FILE_BYTES = 2 * 1024 * 1024; // 2 MB hard cap on inline attachments
 
@@ -354,4 +355,16 @@ export function sendMessage(input: SendMessageInput): ChatMessage {
     created_at: now,
     read_at: null,
   });
+}
+
+/**
+ * Same as sendMessage, but additionally publishes the message to the chat
+ * bus so any active SSE streams receive it instantly. Use this from API
+ * handlers; sendMessage stays available for tests / batch ingestion that
+ * shouldn't broadcast.
+ */
+export function sendMessageAndBroadcast(input: SendMessageInput): ChatMessage {
+  const message = sendMessage(input);
+  broadcast({ type: "message", message });
+  return message;
 }

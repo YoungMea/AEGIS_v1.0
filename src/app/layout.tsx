@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono, Orbitron } from "next/font/google";
 import { I18nProvider } from "@/components/i18n/I18nProvider";
+import { PerfProvider } from "@/components/perf/PerfProvider";
 import "./globals.css";
 
 const inter = Inter({
@@ -43,7 +44,9 @@ export default function RootLayout({
       className={`${inter.variable} ${jetbrains.variable} ${orbitron.variable}`}
     >
       <body className="min-h-screen font-sans">
-        <I18nProvider>{children}</I18nProvider>
+        <PerfProvider>
+          <I18nProvider>{children}</I18nProvider>
+        </PerfProvider>
       </body>
     </html>
   );
