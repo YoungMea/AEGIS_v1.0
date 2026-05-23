@@ -21,6 +21,7 @@ export default async function DashboardPage() {
         phone: user.phone,
         displayName: user.display_name,
         avatarUrl: user.avatar_url,
+        bio: user.bio,
         createdAt: user.created_at,
       }}
       initialDossiers={dossiers}

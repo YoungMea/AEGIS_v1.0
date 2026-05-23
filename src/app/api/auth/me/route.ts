@@ -16,6 +16,7 @@ export async function GET(req: NextRequest) {
       phone: user.phone,
       displayName: user.display_name,
       avatarUrl: user.avatar_url,
+      bio: user.bio,
       createdAt: user.created_at,
     },
   });

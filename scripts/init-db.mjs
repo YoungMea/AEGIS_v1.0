@@ -22,6 +22,7 @@ db.exec(`
     phone         TEXT UNIQUE NOT NULL,
     password_hash TEXT NOT NULL,
     display_name  TEXT,
+    bio           TEXT,
     avatar_url    TEXT,
     created_at    INTEGER NOT NULL,
     updated_at    INTEGER NOT NULL,
@@ -79,6 +80,20 @@ db.exec(`
     window_start INTEGER NOT NULL,
     PRIMARY KEY (bucket, key)
   );
+
+  CREATE TABLE IF NOT EXISTS audit_log (
+    id          TEXT PRIMARY KEY,
+    user_id     TEXT NOT NULL,
+    action      TEXT NOT NULL,
+    target_type TEXT,
+    target_id   TEXT,
+    summary     TEXT,
+    detail      TEXT,
+    ip          TEXT,
+    created_at  INTEGER NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  );
+  CREATE INDEX IF NOT EXISTS idx_audit_user_time ON audit_log(user_id, created_at DESC);
 
   CREATE TABLE IF NOT EXISTS chat_messages (
     id                TEXT PRIMARY KEY,

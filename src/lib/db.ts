@@ -47,6 +47,7 @@ function migrate(db: Database.Database) {
   safeAlter("ALTER TABLE otp_sessions ADD COLUMN chat_id TEXT");
   safeAlter("ALTER TABLE users ADD COLUMN telegram_chat_id TEXT");
   safeAlter("ALTER TABLE users ADD COLUMN telegram_username TEXT");
+  safeAlter("ALTER TABLE users ADD COLUMN bio TEXT");
   safeAlter("ALTER TABLE dossiers ADD COLUMN evidence_images TEXT");
 }
 
@@ -61,6 +62,7 @@ function init(db: Database.Database) {
       phone             TEXT UNIQUE NOT NULL,
       password_hash     TEXT NOT NULL,
       display_name      TEXT,
+      bio               TEXT,
       avatar_url        TEXT,
       telegram_chat_id  TEXT,
       telegram_username TEXT,
@@ -150,6 +152,24 @@ function init(db: Database.Database) {
       window_start INTEGER NOT NULL,
       PRIMARY KEY (bucket, key)
     );
+
+    -- Audit trail: every meaningful operative action gets a row so the user
+    -- can see "what did I touch" inside My Activity. Detail is a small JSON
+    -- blob with action-specific extras (e.g. dossier id, peer uid).
+    CREATE TABLE IF NOT EXISTS audit_log (
+      id          TEXT PRIMARY KEY,
+      user_id     TEXT NOT NULL,
+      action      TEXT NOT NULL,
+      target_type TEXT,
+      target_id   TEXT,
+      summary     TEXT,
+      detail      TEXT,
+      ip          TEXT,
+      created_at  INTEGER NOT NULL,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+    CREATE INDEX IF NOT EXISTS idx_audit_user_time
+      ON audit_log(user_id, created_at DESC);
 
     -- AntChat: every message is a row. Conversations are derived by ordering
     -- (sender_id, recipient_id) into a deterministic conversation_key so a

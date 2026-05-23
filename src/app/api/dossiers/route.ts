@@ -10,6 +10,8 @@ import {
   createDossier,
   listDossiersByOwner,
 } from "@/lib/dossier";
+import { record } from "@/lib/audit";
+import { clientIp } from "@/lib/rate-limit";
 import { ZodError } from "zod";
 
 export async function GET(req: NextRequest) {
@@ -41,5 +43,14 @@ export async function POST(req: NextRequest) {
   }
 
   const dossier = createDossier(user.id, parsed);
+  record({
+    userId: user.id,
+    action: "dossier.created",
+    targetType: "dossier",
+    targetId: dossier.id,
+    summary: dossier.fullName ?? "Untitled subject",
+    detail: { ref: dossier.id.slice(-8).toUpperCase() },
+    ip: clientIp(req),
+  });
   return jsonOk({ dossier }, 201);
 }

@@ -47,6 +47,29 @@ export const changePasswordSchema = z.object({
   newPassword: passwordSchema,
 });
 
+export const updateProfileSchema = z.object({
+  displayName: z
+    .string()
+    .trim()
+    .max(80)
+    .optional()
+    .nullable()
+    .transform((v) => (v === "" ? null : v ?? null)),
+  bio: z
+    .string()
+    .max(280)
+    .optional()
+    .nullable()
+    .transform((v) => (v === "" ? null : v ?? null)),
+  /** Base64 data URL of the avatar image (≤ 600 KB after encoding). */
+  avatarUrl: z
+    .string()
+    .max(900_000)
+    .optional()
+    .nullable()
+    .transform((v) => (v === "" ? null : v ?? null)),
+});
+
 export const dossierSchema = z.object({
   classification: z
     .enum(["UNCLASSIFIED", "CONFIDENTIAL", "SECRET", "TOP SECRET"])

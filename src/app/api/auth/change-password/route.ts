@@ -6,6 +6,8 @@ import { jsonError, jsonOk, safeJson, fromZod } from "@/lib/api";
 import { changePasswordSchema } from "@/lib/validation";
 import { requireUser, hashPassword, verifyPassword } from "@/lib/auth";
 import { getDb } from "@/lib/db";
+import { record } from "@/lib/audit";
+import { clientIp } from "@/lib/rate-limit";
 import { ZodError } from "zod";
 
 export async function POST(req: NextRequest) {
@@ -38,6 +40,12 @@ export async function POST(req: NextRequest) {
   db.prepare(
     "UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?",
   ).run(newHash, Date.now(), user.id);
+
+  record({
+    userId: user.id,
+    action: "auth.password_changed",
+    ip: clientIp(req),
+  });
 
   return jsonOk({ ok: true });
 }

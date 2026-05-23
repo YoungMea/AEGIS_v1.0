@@ -7,6 +7,7 @@ import { jsonError, jsonOk, safeJson, fromZod } from "@/lib/api";
 import { requireUser } from "@/lib/auth";
 import { sendMessageAndBroadcast as sendMessage, MAX_FILE_BYTES } from "@/lib/chat";
 import { rateLimit, clientIp } from "@/lib/rate-limit";
+import { record } from "@/lib/audit";
 import { z, ZodError } from "zod";
 
 const fileSchema = z.object({
@@ -90,6 +91,21 @@ export async function POST(req: NextRequest) {
               kind: "dossier",
               dossierId: parsed.dossierId,
             });
+
+    record({
+      userId: user.id,
+      action: "chat.sent",
+      targetType: "user",
+      targetId: parsed.recipientId,
+      summary:
+        parsed.kind === "text"
+          ? `Text · ${parsed.text.slice(0, 40)}`
+          : parsed.kind === "file"
+            ? `File · ${parsed.file.name}`
+            : `Dossier shared`,
+      detail: { kind: parsed.kind },
+      ip: clientIp(req),
+    });
 
     return jsonOk({ message }, 201);
   } catch (e) {

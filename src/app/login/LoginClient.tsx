@@ -1,5 +1,5 @@
 "use client";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -20,6 +20,8 @@ import { useI18n } from "@/components/i18n/I18nProvider";
 import { RecoverUidModal } from "./RecoverUidModal";
 import { AnimatePresence as RecoverPresence } from "framer-motion";
 
+const REMEMBER_KEY = "aegis:remember:uid";
+
 export function LoginClient() {
   const router = useRouter();
   const { t } = useI18n();
@@ -32,6 +34,22 @@ export function LoginClient() {
   >("idle");
   const [error, setError] = useState<string | null>(null);
   const [showRecover, setShowRecover] = useState(false);
+  const [remember, setRemember] = useState(true);
+
+  // Restore the remembered UID on mount.
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem(REMEMBER_KEY);
+      if (saved && /^[0-9]{6,12}$/.test(saved)) {
+        setUid(saved);
+        setRemember(true);
+      } else {
+        setRemember(false);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -57,6 +75,16 @@ export function LoginClient() {
         setTimeout(() => setStage("idle"), 1400);
         setError(data.error ?? t.auth.login.authFailed);
         return;
+      }
+      // Persist UID if the user opted in.
+      try {
+        if (remember) {
+          window.localStorage.setItem(REMEMBER_KEY, uid);
+        } else {
+          window.localStorage.removeItem(REMEMBER_KEY);
+        }
+      } catch {
+        /* ignore */
       }
       // brief "granted" frame before navigating
       setStage("granted");
@@ -243,6 +271,36 @@ export function LoginClient() {
                     </motion.div>
                   )}
                 </AnimatePresence>
+
+                <label className="flex items-center gap-2.5 text-xs font-mono uppercase tracking-[0.16em] text-white/55 hover:text-white/85 cursor-pointer select-none transition">
+                  <span className="relative inline-flex h-4 w-4">
+                    <input
+                      type="checkbox"
+                      checked={remember}
+                      onChange={(e) => setRemember(e.target.checked)}
+                      className="peer sr-only"
+                    />
+                    <span
+                      aria-hidden
+                      className="absolute inset-0 rounded-sm border border-white/20 bg-white/[0.03] peer-checked:bg-emerald-glow/20 peer-checked:border-emerald-glow/60 peer-checked:shadow-[0_0_8px_rgba(16,245,168,0.4)] transition"
+                    />
+                    <svg
+                      aria-hidden
+                      className="absolute inset-0 m-auto h-3 w-3 text-emerald-glow opacity-0 peer-checked:opacity-100 transition"
+                      viewBox="0 0 16 16"
+                      fill="none"
+                    >
+                      <path
+                        d="M3 8.5L6.5 12L13 4.5"
+                        stroke="currentColor"
+                        strokeWidth="2.2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </span>
+                  <span>{t.common.rememberUid}</span>
+                </label>
 
                 <button
                   type="submit"

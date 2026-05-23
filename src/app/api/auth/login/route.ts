@@ -12,6 +12,7 @@ import {
   setSessionCookie,
   verifyPassword,
 } from "@/lib/auth";
+import { record } from "@/lib/audit";
 import { ZodError } from "zod";
 
 export async function POST(req: NextRequest) {
@@ -69,6 +70,13 @@ export async function POST(req: NextRequest) {
 
   const token = signSession({ sub: row.id, uid: row.uid });
   await setSessionCookie(token);
+
+  record({
+    userId: row.id,
+    action: "auth.login",
+    summary: `UID ${row.uid}`,
+    ip,
+  });
 
   return jsonOk({
     user: {

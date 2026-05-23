@@ -74,6 +74,7 @@ export interface SessionUser {
   phone: string;
   display_name: string | null;
   avatar_url: string | null;
+  bio: string | null;
   created_at: number;
 }
 
@@ -98,7 +99,7 @@ export async function getSessionUser(
   const db = getDb();
   const row = db
     .prepare(
-      "SELECT id, uid, phone, display_name, avatar_url, created_at FROM users WHERE id = ?",
+      "SELECT id, uid, phone, display_name, avatar_url, bio, created_at FROM users WHERE id = ?",
     )
     .get(payload.sub) as SessionUser | undefined;
 

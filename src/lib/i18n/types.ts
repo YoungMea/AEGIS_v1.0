@@ -40,6 +40,7 @@ export interface Translation {
     archive: string;
     copy: string;
     copied: string;
+    rememberUid: string;
   };
   language: {
     label: string;
@@ -57,6 +58,44 @@ export interface Translation {
     operative: string;
     changePassword: string;
     logout: string;
+    profile: string;
+    activity: string;
+    badge: string;
+    titlePart1: string;
+    titlePart2: string;
+    subtitle: string;
+    phoneLabel: string;
+    enrolledLabel: string;
+    statusLabel: string;
+    statusActive: string;
+    displayNameLabel: string;
+    displayNameHint: string;
+    displayNamePlaceholder: string;
+    bioLabel: string;
+    bioPlaceholder: string;
+    changeAvatar: string;
+    removeAvatar: string;
+    avatarBadType: string;
+    avatarTooLarge: string;
+    savedTitle: string;
+    savedDesc: string;
+  };
+  activity: {
+    badge: string;
+    titlePart1: string;
+    titlePart2: string;
+    subtitle: string;
+    empty: string;
+    loadMore: string;
+    actionDossierCreated: string;
+    actionDossierUpdated: string;
+    actionDossierViewed: string;
+    actionDossierDeleted: string;
+    actionLogin: string;
+    actionLogout: string;
+    actionPasswordChanged: string;
+    actionProfileUpdated: string;
+    actionMessageSent: string;
   };
   auth: {
     classifiedAccessPortal: string;

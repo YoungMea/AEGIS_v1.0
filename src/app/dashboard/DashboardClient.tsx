@@ -14,6 +14,8 @@ import {
   Newspaper,
   Headphones,
   MessageSquare,
+  ScrollText,
+  UserCircle,
 } from "lucide-react";
 import { Logo } from "@/components/ui/Logo";
 import { StatusBar } from "@/components/ui/StatusBar";
@@ -32,8 +34,11 @@ import { FindFriendsSection } from "./sections/FindFriendsSection";
 import { NewsSection } from "./sections/NewsSection";
 import { SupportSection } from "./sections/SupportSection";
 import { ChatSection } from "./sections/ChatSection";
+import { ProfileSection } from "./sections/ProfileSection";
+import { ActivitySection } from "./sections/ActivitySection";
 import { ChangePasswordModal } from "./modals/ChangePasswordModal";
 import { DossierViewModal } from "./modals/DossierViewModal";
+import { ChatFab } from "./ChatFab";
 
 interface Props {
   user: SessionUserDto;
@@ -52,6 +57,7 @@ function DashboardInner({ user, initialDossiers }: Props) {
   const [booted, setBooted] = useState(false);
   const [section, setSection] = useState<DashboardSection>("database");
   const [dossiers, setDossiers] = useState<Dossier[]>(initialDossiers);
+  const [currentUser, setCurrentUser] = useState<SessionUserDto>(user);
   const [editingDossier, setEditingDossier] = useState<Dossier | null>(null);
   const [viewingDossier, setViewingDossier] = useState<Dossier | null>(null);
   const [showChangePw, setShowChangePw] = useState(false);
@@ -100,7 +106,7 @@ function DashboardInner({ user, initialDossiers }: Props) {
   // user isn't currently looking at the chat tab, bump the unread badge.
   useChatStream({
     onMessage: (msg) => {
-      if (msg.recipientId !== user.id) return; // only inbound matters
+      if (msg.recipientId !== currentUser.id) return; // only inbound matters
       // If the chat section is open, ChatSection itself will mark it read.
       // We optimistically increment otherwise.
       setChatUnread((n) => n + 1);
@@ -119,11 +125,13 @@ function DashboardInner({ user, initialDossiers }: Props) {
       {!booted && <BootSequence onDone={() => setBooted(true)} />}
 
       <TopBar
-        user={user}
+        user={currentUser}
         section={section}
         onChangeSection={setSection}
         onChangePassword={() => setShowChangePw(true)}
         onLogout={logout}
+        onOpenProfile={() => setSection("profile")}
+        onOpenActivity={() => setSection("activity")}
         chatUnread={chatUnread}
       />
 
@@ -176,7 +184,7 @@ function DashboardInner({ user, initialDossiers }: Props) {
               transition={{ duration: 0.25 }}
             >
               <AddSection
-                user={user}
+                user={currentUser}
                 editing={editingDossier}
                 onCancel={() => {
                   setEditingDossier(null);
@@ -205,7 +213,7 @@ function DashboardInner({ user, initialDossiers }: Props) {
               transition={{ duration: 0.25 }}
             >
               <FindFriendsSection
-                currentUid={user.uid}
+                currentUid={currentUser.uid}
                 onMessageOperative={(id) => {
                   setStartChatPeerId(id);
                   setSection("chat");
@@ -223,7 +231,7 @@ function DashboardInner({ user, initialDossiers }: Props) {
               transition={{ duration: 0.25 }}
             >
               <ChatSection
-                user={user}
+                user={currentUser}
                 dossiers={dossiers}
                 openPeerId={startChatPeerId}
                 onConsumed={() => setStartChatPeerId(null)}
@@ -255,10 +263,43 @@ function DashboardInner({ user, initialDossiers }: Props) {
               <SupportSection />
             </motion.div>
           )}
+
+          {section === "profile" && (
+            <motion.div
+              key="profile"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.25 }}
+            >
+              <ProfileSection
+                user={currentUser}
+                onUpdated={(next) => setCurrentUser(next)}
+              />
+            </motion.div>
+          )}
+
+          {section === "activity" && (
+            <motion.div
+              key="activity"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.25 }}
+            >
+              <ActivitySection />
+            </motion.div>
+          )}
         </AnimatePresence>
       </main>
 
       <FooterBar />
+
+      <ChatFab
+        active={section === "chat"}
+        unread={chatUnread}
+        onClick={() => setSection("chat")}
+      />
 
       <AnimatePresence>
         {showChangePw && (
@@ -268,7 +309,7 @@ function DashboardInner({ user, initialDossiers }: Props) {
       <AnimatePresence>
         {viewingDossier && (
           <DossierViewModal
-            user={user}
+            user={currentUser}
             dossier={viewingDossier}
             onClose={() => setViewingDossier(null)}
             onEdit={() => {
@@ -289,6 +330,8 @@ function TopBar({
   onChangeSection,
   onChangePassword,
   onLogout,
+  onOpenProfile,
+  onOpenActivity,
   chatUnread,
 }: {
   user: SessionUserDto;
@@ -296,6 +339,8 @@ function TopBar({
   onChangeSection: (s: DashboardSection) => void;
   onChangePassword: () => void;
   onLogout: () => void;
+  onOpenProfile: () => void;
+  onOpenActivity: () => void;
   chatUnread: number;
 }) {
   const { t } = useI18n();
@@ -397,6 +442,24 @@ function TopBar({
                   </div>
                   <div className="h-px bg-white/[0.06] my-1" />
                   <MenuItem
+                    icon={<UserCircle size={14} />}
+                    onClick={() => {
+                      setProfileOpen(false);
+                      onOpenProfile();
+                    }}
+                  >
+                    {t.profile.profile}
+                  </MenuItem>
+                  <MenuItem
+                    icon={<ScrollText size={14} />}
+                    onClick={() => {
+                      setProfileOpen(false);
+                      onOpenActivity();
+                    }}
+                  >
+                    {t.profile.activity}
+                  </MenuItem>
+                  <MenuItem
                     icon={<KeyRound size={14} />}
                     onClick={() => {
                       setProfileOpen(false);
@@ -427,6 +490,7 @@ function TopBar({
         {tabs.map((tab) => {
           const active = section === tab.id;
           const showBadge = tab.badge && tab.badge > 0;
+          const isAccent = !!tab.accent;
           return (
             <button
               key={tab.id}
@@ -435,17 +499,25 @@ function TopBar({
                 "relative flex items-center gap-2 px-3 sm:px-4 h-9 rounded-md text-[12px] sm:text-[13px] font-medium uppercase tracking-[0.14em] transition whitespace-nowrap shrink-0",
                 active
                   ? "text-emerald-glow"
-                  : tab.accent
-                    ? "text-white hover:text-emerald-glow"
+                  : isAccent
+                    ? "text-emerald-glow/90 hover:text-emerald-glow"
                     : "text-white/55 hover:text-white",
               )}
             >
+              {/* Glowing background for the AntChat tab so it never blends with the others */}
+              {isAccent && !active && (
+                <span
+                  aria-hidden
+                  className="absolute inset-0 -z-10 rounded-md border border-emerald-glow/30 bg-emerald-glow/[0.04]"
+                />
+              )}
+
               {tab.icon}
               <span>{tab.label}</span>
 
               {/* "live" indicator on the AntChat tab when it's not the active one */}
-              {tab.accent && !active && (
-                <span className="hidden sm:inline-flex items-center gap-1 ml-1 font-mono text-[9px] tracking-[0.22em] text-emerald-glow/80">
+              {isAccent && !active && (
+                <span className="hidden sm:inline-flex items-center gap-1 ml-1 font-mono text-[9px] tracking-[0.22em] text-emerald-glow">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-glow animate-pulseDot" />
                   LIVE
                 </span>
@@ -455,10 +527,8 @@ function TopBar({
               {showBadge && (
                 <span
                   className={cn(
-                    "ml-1 inline-flex h-[18px] min-w-[18px] px-1.5 items-center justify-center rounded-full font-mono text-[10px] leading-none",
-                    active
-                      ? "bg-emerald-glow text-ink-50"
-                      : "bg-emerald-glow text-ink-50 shadow-[0_0_10px_rgba(16,245,168,0.6)]",
+                    "ml-1 inline-flex h-[18px] min-w-[18px] px-1.5 items-center justify-center rounded-full font-mono text-[10px] leading-none font-bold",
+                    "bg-emerald-glow text-ink-50 shadow-[0_0_10px_rgba(16,245,168,0.6)]",
                   )}
                 >
                   {tab.badge! > 99 ? "99+" : tab.badge}

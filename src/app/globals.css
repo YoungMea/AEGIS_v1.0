@@ -241,10 +241,78 @@ body {
 
 /* Hide print headers */
 @media print {
-  body { background: white; color: black; }
-  .no-print { display: none !important; }
-  .paper { background: white !important; border: none !important; }
-  .paper::before, .paper::after { display: none !important; }
+  /* Force a clean black-on-white render — the dark theme uses a lot of
+     translucent text colours which look washed-out on paper. */
+  *,
+  *::before,
+  *::after {
+    color: #000 !important;
+    text-shadow: none !important;
+    box-shadow: none !important;
+    background-image: none !important;
+  }
+  html,
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+  body {
+    background-image: none !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .paper {
+    background: #fff !important;
+    border: none !important;
+  }
+  .paper::before,
+  .paper::after {
+    display: none !important;
+  }
+  /* Re-tint the accent colour family so it survives on paper. */
+  .text-emerald-glow,
+  [class*="text-emerald"],
+  .text-glow {
+    color: #006b3c !important;
+  }
+  .text-warning,
+  [class*="text-warning"] {
+    color: #8b0000 !important;
+  }
+  .text-amber-glow,
+  [class*="text-amber"] {
+    color: #8a5a00 !important;
+  }
+  /* Force every translucent text shade fully opaque for legibility. */
+  [class*="text-white"] {
+    color: #000 !important;
+    opacity: 1 !important;
+  }
+  /* Borders and dividers */
+  .dotted-divider {
+    background: none !important;
+    border-top: 1px dashed #000 !important;
+    height: 0 !important;
+  }
+  /* Stamps stay readable */
+  .stamp {
+    border: 2px solid #8b0000 !important;
+    color: #8b0000 !important;
+  }
+  .stamp-emerald {
+    border: 2px solid #006b3c !important;
+    color: #006b3c !important;
+  }
+  /* Image preserve */
+  img {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  /* Page setup */
+  @page {
+    margin: 16mm;
+  }
 }
 
 /* =====================================================

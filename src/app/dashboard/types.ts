@@ -4,6 +4,7 @@ export interface SessionUserDto {
   phone: string;
   displayName: string | null;
   avatarUrl: string | null;
+  bio: string | null;
   createdAt: number;
 }
 
@@ -13,7 +14,9 @@ export type DashboardSection =
   | "find"
   | "chat"
   | "news"
-  | "support";
+  | "support"
+  | "profile"
+  | "activity";
 
 export interface UserSearchResult {
   id: string;

@@ -12,6 +12,8 @@ import {
   getDossier,
   updateDossier,
 } from "@/lib/dossier";
+import { record } from "@/lib/audit";
+import { clientIp } from "@/lib/rate-limit";
 import { ZodError } from "zod";
 
 interface Ctx {
@@ -28,6 +30,14 @@ export async function GET(req: NextRequest, ctx: Ctx) {
   const { id } = await ctx.params;
   const dossier = getDossier(id, user.id);
   if (!dossier) return jsonError("Not found", 404);
+  record({
+    userId: user.id,
+    action: "dossier.viewed",
+    targetType: "dossier",
+    targetId: dossier.id,
+    summary: dossier.fullName ?? "Untitled subject",
+    ip: clientIp(req),
+  });
   return jsonOk({ dossier });
 }
 
@@ -49,6 +59,14 @@ export async function PUT(req: NextRequest, ctx: Ctx) {
   }
   const dossier = updateDossier(id, user.id, parsed);
   if (!dossier) return jsonError("Not found", 404);
+  record({
+    userId: user.id,
+    action: "dossier.updated",
+    targetType: "dossier",
+    targetId: dossier.id,
+    summary: dossier.fullName ?? "Untitled subject",
+    ip: clientIp(req),
+  });
   return jsonOk({ dossier });
 }
 
@@ -62,5 +80,13 @@ export async function DELETE(req: NextRequest, ctx: Ctx) {
   const { id } = await ctx.params;
   const ok = deleteDossier(id, user.id);
   if (!ok) return jsonError("Not found", 404);
+  record({
+    userId: user.id,
+    action: "dossier.deleted",
+    targetType: "dossier",
+    targetId: id,
+    summary: `Dossier ${id.slice(-8).toUpperCase()}`,
+    ip: clientIp(req),
+  });
   return jsonOk({ ok: true });
 }
