@@ -332,11 +332,12 @@ async function aiVisionOpenRouter(
 
   // OpenRouter exposes many vision models. Free vision models churn — the
   // operator can override via env when one disappears. Current safe default
-  // is NVIDIA's vision-language Nemotron, which is on the free tier and
-  // accepts the OpenAI-compatible image_url message format.
+  // is Google's Gemma 4 31B IT, the largest free vision model on the
+  // platform; it understands Central Asian / Uzbek geographic clues much
+  // better than the smaller Nvidia Nemotron and stays available longer.
   const model =
     (process.env.OPENROUTER_VISION_MODEL ??
-      "nvidia/nemotron-nano-12b-v2-vl:free").trim();
+      "google/gemma-4-31b-it:free").trim();
 
   // Free models often don't honour response_format: we rely on the prompt
   // itself to enforce JSON output. Paid models are usually better at it,
@@ -468,7 +469,7 @@ export function aiProviderLabel(): string {
   if (orKey) {
     const model =
       (process.env.OPENROUTER_VISION_MODEL ??
-        "nvidia/nemotron-nano-12b-v2-vl:free").trim();
+        "google/gemma-4-31b-it:free").trim();
     return `OpenRouter · ${model}`;
   }
   if (geminiKey) {
