@@ -205,9 +205,12 @@ export function ImageIntelSection() {
           <ScanLine size={11} /> {t.intel.badge}
         </div>
         <h1 className="font-display tracking-[0.16em] uppercase text-2xl sm:text-3xl text-white">
-          {t.intel.titlePart1}{" "}
+          {t.intel.titlePart1}
           <span className="text-emerald-glow text-glow">{t.intel.titlePart2}</span>
         </h1>
+        <p className="text-emerald-glow/70 text-[11px] uppercase tracking-[0.32em] font-mono mt-2">
+          {t.intel.tagline}
+        </p>
         <p className="text-white/45 text-xs mt-2 leading-relaxed">
           {t.intel.subtitle}
         </p>

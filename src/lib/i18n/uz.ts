@@ -34,7 +34,7 @@ export const uz: Translation = {
     news: "Yangiliklar",
     support: "Yordam",
     chat: "AntChat",
-    intel: "Image Intel",
+    owlSight: "OwlSight",
   },
   profile: {
     operative: "Operativ",
@@ -82,11 +82,12 @@ export const uz: Translation = {
     testSound: "Sinov ovozi",
   },
   intel: {
-    badge: "IMAGE INTEL · OSINT",
-    titlePart1: "Image",
-    titlePart2: "Intel",
+    badge: "OWLSIGHT · IMAGE OSINT",
+    titlePart1: "Owl",
+    titlePart2: "Sight",
+    tagline: "Ko'z ko'rmaganini boyqush ko'radi.",
     subtitle:
-      "Rasmni tashlang, AEGIS EXIF metama'lumotlarini, GPS koordinatalarini, rasmda yozilgan matnni o'qiydi va Google Gemini orqali sahna va joyni taxmin qiladi.",
+      "Rasmni tashlang, OwlSight EXIF metama'lumotlarini, GPS koordinatalarini, rasmda yozilgan matnni o'qiydi va Google Gemini orqali sahna va joyni taxmin qiladi.",
     targetTag: "MAQSAD",
     dropTitle: "Skanerlash uchun rasm tashlang",
     dropDesc:
@@ -522,6 +523,68 @@ export const uz: Translation = {
           },
         ],
         cta: "AntChat'ni ochish",
+      },
+      owlSight: {
+        category: "MODUL · FAOL",
+        date: "2026-05-23",
+        title: "OwlSight — AEGIS ichida rasm OSINT",
+        blurb:
+          "Istalgan rasmni tashlang — OwlSight EXIF metama'lumotlarini o'qiydi, rasmdagi matnni transkribatsiya qiladi, GPS bo'lsa xaritada ko'rsatadi va Google Gemini orqali joyni taxmin qiladi.",
+        body: [
+          "OwlSight — yangi rasm razvedkasi moduli. Boyqush ko'z ko'rmaganini ko'radi: yashirin metama'lumotlar, kichik belgilar, oddiy fotosurat ortidagi shahar.",
+          "Uchta qatlam parallel ishlaydi. EXIF tahlili — fayldan kamera, ob'ektiv, vaqt va GPS'ni to'g'ridan-to'g'ri oladi. Tesseract OCR brauzeringizda ishlaydi va ko'rinadigan matnlarni o'qiydi. Google Gemini esa taktik sahna tavsifi va ishonch darajasi bilan geografik taxmin beradi — bu ayniqsa GPS yo'q rasmlar uchun foydali.",
+          "Topgan barcha narsangiz AEGIS ichida qoladi. Rasm TLS orqali yuboriladi, bir marta ishlanadi va operativ sessiyangizdan tashqarida hech qachon log qilinmaydi.",
+        ],
+        highlights: [
+          {
+            title: "EXIF + GPS",
+            desc: "Kamera modeli, ob'ektiv, ISO, aperture, ekspozitsiya va xarita bilan birga GPS koordinatalari.",
+          },
+          {
+            title: "Lokal OCR",
+            desc: "Tesseract belgilarni, raqamlarni va ekran matnini brauzeringizda o'qiydi — yuklanish kerak emas.",
+          },
+          {
+            title: "AI sahna va joy taxmini",
+            desc: "Gemini 1.5 Flash sahna tavsifi, ob'ektlar ro'yxati va ishonch darajasi bilan davlat/shahar taxminini qaytaradi.",
+          },
+          {
+            title: "Maxfiylik birinchi",
+            desc: "OCR mahalliy. Gemini chaqiruvlari stateless. Rasmlar serverda saqlanmaydi.",
+          },
+        ],
+        cta: "OwlSight'ni ochish",
+      },
+      hardening: {
+        category: "RELIZ · FAOL",
+        date: "2026-05-23",
+        title: "Mustahkamlash — push bildirishnomalar, ovoz, Telegram'ga shifrlangan zaxiralar",
+        blurb:
+          "Uchta sifat yangilanishi: AntChat uchun native push bildirishnomalar, taktik ovoz qatlami, va har soatlik Telegram'ga shifrlangan zaxira nusxalar — Render qayta yuklansa ham arxivingiz yo'qolmaydi.",
+        body: [
+          "AntChat endi sizni uyg'otadi. Boshqa tab ochilganda yangi xabar kelsa native brauzer bildirishnomasi ishga tushadi, kichik WebAudio 'blip' esa eshitiladigan signal qo'shadi. Ikkalasi profile menyusidagi yangi Bildirishnomalar panelidan yoqiladi.",
+          "Sahnaning ortida server endi har soatda ma'lumotlar bazasining AES-256-GCM shifrlangan nusxasini siz boshqaradigan Telegram chat'ga yuboradi. Sovuq start'da oxirgi nusxa avtomatik tiklanadi — shuning uchun Render'ning bepul tarifida ham, qayta deploy qilingan paytda fayl tizimi tozalansa ham, dossier va AntChat tarixingiz saqlanadi.",
+          "Zaxira nusxalar serverdan chiqishidan oldin NoLook bilan muhrlanadi. Hatto chat'ni o'qiyotgan admin ham faqat shifrlangan matnni ko'radi. Faqat kalit'ga ega server uni ochib tiklay oladi.",
+        ],
+        highlights: [
+          {
+            title: "Native push bildirishnomalar",
+            desc: "Istalgan brauzerda pop-up. Chat tabida bo'lganda avtomatik o'chiriladi.",
+          },
+          {
+            title: "Taktik ovoz qatlami",
+            desc: "Ovoz fayllari yo'q — sintezatorda yaratiladi. Bildirishnomalar panelidan yoqiladi.",
+          },
+          {
+            title: "Soatlik shifrlangan zaxiralar",
+            desc: "To'liq SQLite ma'lumotlar bazasi, AES-256-GCM bilan muhrlanib, shaxsiy Telegram chat'ingizga yuboriladi.",
+          },
+          {
+            title: "Boot'da avtomatik tiklash",
+            desc: "Sovuq start'da bo'sh DB? OwlSight Telegram'dan oxirgi nusxani olib avtomatik tiklaydi.",
+          },
+        ],
+        cta: "Bildirishnomalarni ochish",
       },
     },
   },

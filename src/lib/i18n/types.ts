@@ -53,7 +53,7 @@ export interface Translation {
     news: string;
     support: string;
     chat: string;
-    intel: string;
+    owlSight: string;
   };
   profile: {
     operative: string;
@@ -101,6 +101,7 @@ export interface Translation {
     badge: string;
     titlePart1: string;
     titlePart2: string;
+    tagline: string;
     subtitle: string;
     targetTag: string;
     dropTitle: string;
@@ -399,6 +400,8 @@ export interface Translation {
       hawkeye: NewsItem;
       noLook: NewsItem;
       antChat: NewsItem;
+      owlSight: NewsItem;
+      hardening: NewsItem;
     };
   };
   chat: {

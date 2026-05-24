@@ -34,7 +34,7 @@ export const en: Translation = {
     news: "News",
     support: "Support",
     chat: "AntChat",
-    intel: "Image Intel",
+    owlSight: "OwlSight",
   },
   profile: {
     operative: "Operative",
@@ -82,11 +82,12 @@ export const en: Translation = {
     testSound: "Play test sound",
   },
   intel: {
-    badge: "IMAGE INTEL · OSINT",
-    titlePart1: "Image",
-    titlePart2: "Intel",
+    badge: "OWLSIGHT · IMAGE OSINT",
+    titlePart1: "Owl",
+    titlePart2: "Sight",
+    tagline: "What the eye misses, the owl sees.",
     subtitle:
-      "Drop a photo and AEGIS extracts EXIF metadata, GPS coordinates, on-screen text and an AI scene/geo guess powered by Google Gemini.",
+      "Drop a photo and OwlSight extracts EXIF metadata, GPS coordinates, on-screen text and an AI scene/geo guess powered by Google Gemini.",
     targetTag: "TARGET",
     dropTitle: "Drop an image to scan",
     dropDesc:
@@ -522,6 +523,68 @@ export const en: Translation = {
           },
         ],
         cta: "Open AntChat",
+      },
+      owlSight: {
+        category: "MODULE · LIVE",
+        date: "2026-05-23",
+        title: "OwlSight — image OSINT inside AEGIS",
+        blurb:
+          "Drop any photo and OwlSight reads its EXIF metadata, decodes on-image text, plots GPS on a map and asks Google Gemini where it might have been taken.",
+        body: [
+          "OwlSight is the new image intelligence module. The owl sees what the eye misses: hidden metadata, faint signage, the city behind a generic photo.",
+          "Three layers run side by side. EXIF parsing pulls the camera, lens, time and GPS straight from the file. Tesseract OCR runs in your browser and transcribes any visible text. Google Gemini delivers a tactical scene description and a confidence-scored geographic guess — useful when the photo has no GPS at all.",
+          "Anything you discover stays inside AEGIS. The image is sent over TLS, processed once and never logged outside your operational session.",
+        ],
+        highlights: [
+          {
+            title: "EXIF + GPS",
+            desc: "Camera model, lens, ISO, aperture, exposure and any embedded GPS coordinates with map preview.",
+          },
+          {
+            title: "On-device OCR",
+            desc: "Tesseract reads signs, license plates and screen text right in your browser — no upload required.",
+          },
+          {
+            title: "AI scene & geo guess",
+            desc: "Gemini 1.5 Flash returns a scene description, object list and country/city estimate with confidence.",
+          },
+          {
+            title: "Privacy-first",
+            desc: "OCR stays local. Gemini calls are stateless. Images are never persisted on the server.",
+          },
+        ],
+        cta: "Open OwlSight",
+      },
+      hardening: {
+        category: "RELEASE · LIVE",
+        date: "2026-05-23",
+        title: "Hardening — push notifications, sound, encrypted Telegram backups",
+        blurb:
+          "Three quality-of-life upgrades: native push notifications for AntChat, a tactical sound layer, and hourly encrypted backups to Telegram so a Render restart never erases your archive.",
+        body: [
+          "AntChat now wakes you up. Native browser notifications fire when a message arrives in another tab, and a tiny WebAudio 'blip' adds an audible cue. Both are opt-in from the new Notifications panel in your profile menu.",
+          "Behind the scenes, every hour the server now ships an AES-256-GCM encrypted snapshot of the database to a Telegram chat you control. On a cold start the latest backup is restored automatically — so even on Render's free tier, where the filesystem resets on redeploy, your dossiers and AntChat history survive.",
+          "Backups are sealed with NoLook before they leave the server. Even an admin reading the chat sees opaque ciphertext. Only the server with the key can decrypt and restore.",
+        ],
+        highlights: [
+          {
+            title: "Native push notifications",
+            desc: "Pop-up alerts in any browser. Auto-silenced when you're already on the chat tab.",
+          },
+          {
+            title: "Tactical sound layer",
+            desc: "Synthesised on the fly — no audio files to ship. Toggle from Notifications.",
+          },
+          {
+            title: "Hourly encrypted backups",
+            desc: "Your full SQLite database, AES-256-GCM sealed, sent to your private Telegram chat.",
+          },
+          {
+            title: "Auto-restore on boot",
+            desc: "Empty database on cold start? OwlSight pulls the latest backup from Telegram and rehydrates seamlessly.",
+          },
+        ],
+        cta: "Open Notifications",
       },
     },
   },

@@ -12,13 +12,15 @@ import { useI18n } from "@/components/i18n/I18nProvider";
 import type { NewsItem } from "@/lib/i18n/types";
 import { cn } from "@/lib/utils";
 
-type ItemKey = "aegisDemo" | "hawkeye" | "noLook" | "antChat";
+type ItemKey = "aegisDemo" | "hawkeye" | "noLook" | "antChat" | "owlSight" | "hardening";
 
 /**
  * Visual cover for each story. Cards have an oversized rounded-rectangle
  * cover that uses inline SVG so we don't need any image assets.
  */
 function CoverArt({ kind }: { kind: ItemKey }) {
+  if (kind === "owlSight") return <OwlSightCover />;
+  if (kind === "hardening") return <HardeningCover />;
   if (kind === "noLook") return <NoLookCover />;
   if (kind === "antChat") return <AntChatCover />;
   if (kind === "aegisDemo") {
@@ -240,6 +242,8 @@ export function NewsSection() {
   const [active, setActive] = useState<ItemKey | null>(null);
 
   const items: { key: ItemKey; data: NewsItem }[] = [
+    { key: "owlSight", data: t.news.items.owlSight },
+    { key: "hardening", data: t.news.items.hardening },
     { key: "antChat", data: t.news.items.antChat },
     { key: "noLook", data: t.news.items.noLook },
     { key: "hawkeye", data: t.news.items.hawkeye },
@@ -723,6 +727,247 @@ function AntChatCover() {
         letterSpacing="4"
       >
         text ▸ files ▸ dossier shares
+      </text>
+    </svg>
+  );
+}
+
+
+function OwlSightCover() {
+  return (
+    <svg
+      viewBox="0 0 800 320"
+      className="block h-full w-full"
+      preserveAspectRatio="xMidYMid slice"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden
+    >
+      <defs>
+        <radialGradient id="ow-bg" cx="80%" cy="40%" r="70%">
+          <stop offset="0%" stopColor="#0F1A24" />
+          <stop offset="60%" stopColor="#060B14" />
+          <stop offset="100%" stopColor="#02050A" />
+        </radialGradient>
+        <radialGradient id="ow-iris" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#FFB020" />
+          <stop offset="55%" stopColor="#A86A00" />
+          <stop offset="100%" stopColor="#1A0E00" />
+        </radialGradient>
+      </defs>
+      <rect width="800" height="320" fill="url(#ow-bg)" />
+
+      {/* faint grid */}
+      {Array.from({ length: 25 }).map((_, i) => (
+        <line
+          key={`v${i}`}
+          x1={i * 32}
+          y1="0"
+          x2={i * 32}
+          y2="320"
+          stroke="rgba(255,255,255,0.03)"
+          strokeWidth="1"
+        />
+      ))}
+
+      {/* Owl head — abstract: two big round eyes + beak */}
+      <g transform="translate(560 165)">
+        {/* head outline */}
+        <path
+          d="M-150 0 C-150 -110 -90 -150 0 -150 C90 -150 150 -110 150 0 C150 90 90 130 0 130 C-90 130 -150 90 -150 0 Z"
+          fill="rgba(16,245,168,0.05)"
+          stroke="rgba(16,245,168,0.4)"
+          strokeWidth="2"
+        />
+        {/* feather tufts */}
+        <path d="M-110 -110 L-90 -150 L-60 -120 Z" fill="rgba(16,245,168,0.18)" />
+        <path d="M110 -110 L90 -150 L60 -120 Z" fill="rgba(16,245,168,0.18)" />
+
+        {/* left eye */}
+        <g transform="translate(-58 -10)">
+          <circle r="48" fill="rgba(16,245,168,0.08)" stroke="rgba(16,245,168,0.45)" strokeWidth="2" />
+          <circle r="34" fill="url(#ow-iris)" />
+          <circle r="14" fill="#02050A" />
+          <circle cx="-5" cy="-5" r="4" fill="rgba(255,255,255,0.85)" />
+        </g>
+
+        {/* right eye */}
+        <g transform="translate(58 -10)">
+          <circle r="48" fill="rgba(16,245,168,0.08)" stroke="rgba(16,245,168,0.45)" strokeWidth="2" />
+          <circle r="34" fill="url(#ow-iris)" />
+          <circle r="14" fill="#02050A" />
+          <circle cx="-5" cy="-5" r="4" fill="rgba(255,255,255,0.85)" />
+        </g>
+
+        {/* beak */}
+        <path
+          d="M-10 30 L0 60 L10 30 Z"
+          fill="rgba(16,245,168,0.7)"
+          stroke="rgba(16,245,168,0.9)"
+          strokeWidth="1.5"
+        />
+
+        {/* targeting reticle around the right eye */}
+        {Array.from({ length: 12 }).map((_, i) => {
+          const a = (i / 12) * Math.PI * 2;
+          const r1 = 60;
+          const r2 = i % 3 === 0 ? 80 : 70;
+          return (
+            <line
+              key={i}
+              x1={58 + Math.cos(a) * r1}
+              y1={-10 + Math.sin(a) * r1}
+              x2={58 + Math.cos(a) * r2}
+              y2={-10 + Math.sin(a) * r2}
+              stroke="rgba(16,245,168,0.5)"
+              strokeWidth="1"
+            />
+          );
+        })}
+      </g>
+
+      {/* title */}
+      <text
+        x="48"
+        y="80"
+        fill="#10F5A8"
+        fontFamily="ui-monospace, SFMono-Regular"
+        fontSize="11"
+        letterSpacing="6"
+        fontWeight="600"
+      >
+        MODULE · LIVE
+      </text>
+      <text
+        x="48"
+        y="146"
+        fill="#FFFFFF"
+        fontFamily="Orbitron, sans-serif"
+        fontSize="48"
+        letterSpacing="6"
+        fontWeight="700"
+      >
+        OwlSight
+      </text>
+      <text
+        x="48"
+        y="186"
+        fill="rgba(255,255,255,0.55)"
+        fontFamily="Orbitron, sans-serif"
+        fontSize="14"
+        letterSpacing="4"
+      >
+        IMAGE OSINT · POWERED BY GEMINI
+      </text>
+      <text
+        x="48"
+        y="270"
+        fill="rgba(255,255,255,0.35)"
+        fontFamily="ui-monospace, SFMono-Regular"
+        fontSize="11"
+        letterSpacing="4"
+      >
+        EXIF ▸ OCR ▸ AI ▸ GEO-GUESS
+      </text>
+    </svg>
+  );
+}
+
+function HardeningCover() {
+  return (
+    <svg
+      viewBox="0 0 800 320"
+      className="block h-full w-full"
+      preserveAspectRatio="xMidYMid slice"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden
+    >
+      <defs>
+        <linearGradient id="hd-bg" x1="0" x2="1" y1="0" y2="1">
+          <stop offset="0%" stopColor="#0A0F18" />
+          <stop offset="100%" stopColor="#02060A" />
+        </linearGradient>
+      </defs>
+      <rect width="800" height="320" fill="url(#hd-bg)" />
+
+      {/* faint grid */}
+      {Array.from({ length: 25 }).map((_, i) => (
+        <line
+          key={`v${i}`}
+          x1={i * 32}
+          y1="0"
+          x2={i * 32}
+          y2="320"
+          stroke="rgba(255,255,255,0.03)"
+          strokeWidth="1"
+        />
+      ))}
+
+      {/* three icons in a row on the right: bell, speaker, archive */}
+      <g transform="translate(440 90)" stroke="rgba(16,245,168,0.55)" strokeWidth="2" fill="none">
+        {/* Bell */}
+        <g transform="translate(0 0)">
+          <rect x="-50" y="-40" width="100" height="100" rx="12" fill="rgba(16,245,168,0.06)" />
+          <path d="M-22 14 a22 22 0 0 1 44 0 v6 l8 8 h-60 l8 -8 z" />
+          <path d="M-6 36 a6 6 0 0 0 12 0" />
+          <circle cx="22" cy="-22" r="6" fill="#10F5A8" stroke="none" />
+        </g>
+        {/* Speaker */}
+        <g transform="translate(110 0)">
+          <rect x="-50" y="-40" width="100" height="100" rx="12" fill="rgba(16,245,168,0.06)" />
+          <path d="M-20 6 H-8 L8 -10 v40 L-8 14 H-20 z" fill="rgba(16,245,168,0.18)" />
+          <path d="M16 -2 a12 12 0 0 1 0 24" />
+          <path d="M22 -10 a22 22 0 0 1 0 40" />
+        </g>
+        {/* Cloud + arrow (backup) */}
+        <g transform="translate(220 0)">
+          <rect x="-50" y="-40" width="100" height="100" rx="12" fill="rgba(16,245,168,0.06)" />
+          <path d="M-20 8 a18 18 0 0 1 36 -2 a14 14 0 0 1 4 26 H-18 a14 14 0 0 1 -2 -24 z" />
+          <path d="M0 22 v18 m-10 -10 l10 10 l10 -10" strokeLinecap="round" strokeLinejoin="round" />
+        </g>
+      </g>
+
+      {/* title */}
+      <text
+        x="48"
+        y="80"
+        fill="#10F5A8"
+        fontFamily="ui-monospace, SFMono-Regular"
+        fontSize="11"
+        letterSpacing="6"
+        fontWeight="600"
+      >
+        RELEASE · LIVE
+      </text>
+      <text
+        x="48"
+        y="146"
+        fill="#FFFFFF"
+        fontFamily="Orbitron, sans-serif"
+        fontSize="44"
+        letterSpacing="6"
+        fontWeight="700"
+      >
+        HARDENING
+      </text>
+      <text
+        x="48"
+        y="186"
+        fill="rgba(255,255,255,0.55)"
+        fontFamily="Orbitron, sans-serif"
+        fontSize="14"
+        letterSpacing="4"
+      >
+        NOTIFY · SOUND · BACKUPS
+      </text>
+      <text
+        x="48"
+        y="270"
+        fill="rgba(255,255,255,0.35)"
+        fontFamily="ui-monospace, SFMono-Regular"
+        fontSize="11"
+        letterSpacing="4"
+      >
+        push ▸ blip ▸ aes-256-gcm ▸ telegram
       </text>
     </svg>
   );

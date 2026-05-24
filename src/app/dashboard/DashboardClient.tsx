@@ -261,9 +261,9 @@ function DashboardInner({ user, initialDossiers }: Props) {
             </motion.div>
           )}
 
-          {section === "intel" && (
+          {section === "owlSight" && (
             <motion.div
-              key="intel"
+              key="owlSight"
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
@@ -412,7 +412,7 @@ function TopBar({
       accent: true,
       badge: chatUnread,
     },
-    { id: "intel", label: t.nav.intel, icon: <ScanLine size={14} /> },
+    { id: "owlSight", label: t.nav.owlSight, icon: <ScanLine size={14} /> },
     { id: "news", label: t.nav.news, icon: <Newspaper size={14} /> },
     { id: "support", label: t.nav.support, icon: <Headphones size={14} /> },
   ];
