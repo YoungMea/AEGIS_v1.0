@@ -272,12 +272,34 @@ async function aiVisionOpenRouter(
   const m = /^data:(image\/[^;]+);base64,(.*)$/i.exec(dataUrl);
   if (!m) return null;
 
-  // OpenRouter exposes many vision models. We default to Gemini 2.0 Flash
-  // (free tier) but allow the operator to override via env. The model name
-  // must support OpenAI-style vision messages.
+  // OpenRouter exposes many vision models. Free vision models churn — the
+  // operator can override via env when one disappears. Current safe default
+  // is NVIDIA's vision-language Nemotron, which is on the free tier and
+  // accepts the OpenAI-compatible image_url message format.
   const model =
-    (process.env.OPENROUTER_VISION_MODEL ?? "google/gemini-2.0-flash-exp:free")
-      .trim();
+    (process.env.OPENROUTER_VISION_MODEL ??
+      "nvidia/nemotron-nano-12b-v2-vl:free").trim();
+
+  // Free models often don't honour response_format: we rely on the prompt
+  // itself to enforce JSON output. Paid models are usually better at it,
+  // so we toggle the hint based on whether the operator explicitly asked
+  // for a paid model.
+  const isFree = model.endsWith(":free");
+  const body: Record<string, unknown> = {
+    model,
+    temperature: 0.2,
+    max_tokens: 800,
+    messages: [
+      {
+        role: "user",
+        content: [
+          { type: "text", text: PROMPT },
+          { type: "image_url", image_url: { url: dataUrl } },
+        ],
+      },
+    ],
+  };
+  if (!isFree) body.response_format = { type: "json_object" };
 
   let res: Response;
   try {
@@ -291,23 +313,7 @@ async function aiVisionOpenRouter(
         "HTTP-Referer": process.env.OPENROUTER_SITE_URL ?? "https://aegis.local",
         "X-Title": "AEGIS / OwlSight",
       },
-      body: JSON.stringify({
-        model,
-        temperature: 0.2,
-        max_tokens: 800,
-        // Force JSON output where the model supports it. For free models
-        // that don't, the prompt itself instructs JSON-only output.
-        response_format: { type: "json_object" },
-        messages: [
-          {
-            role: "user",
-            content: [
-              { type: "text", text: PROMPT },
-              { type: "image_url", image_url: { url: dataUrl } },
-            ],
-          },
-        ],
-      }),
+      body: JSON.stringify(body),
     });
   } catch {
     return null;
@@ -316,7 +322,7 @@ async function aiVisionOpenRouter(
   if (!res.ok) {
     // eslint-disable-next-line no-console
     console.warn(
-      `[imageIntel:openrouter] ${res.status}: ${(await res.text()).slice(0, 200)}`,
+      `[imageIntel:openrouter] ${model} ${res.status}: ${(await res.text()).slice(0, 200)}`,
     );
     return null;
   }
@@ -389,7 +395,7 @@ export function aiProviderLabel(): string {
   if ((process.env.OPENROUTER_API_KEY ?? "").trim()) {
     const model =
       (process.env.OPENROUTER_VISION_MODEL ??
-        "google/gemini-2.0-flash-exp:free").trim();
+        "nvidia/nemotron-nano-12b-v2-vl:free").trim();
     return `OpenRouter · ${model}`;
   }
   if ((process.env.GEMINI_API_KEY ?? "").trim()) {
