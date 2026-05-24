@@ -219,16 +219,32 @@ with an empty database, the latest backup is automatically pulled and
 restored. Backups are sealed with NoLook before they leave the server,
 so the chat owner sees only ciphertext.
 
-### OwlSight AI (Gemini)
+### OwlSight AI (two provider options)
 
-The AI panel needs a Google AI Studio key:
+OwlSight's AI panel calls a vision model to describe the scene and guess
+the location. Two providers are supported — set just one of them.
+
+**Option A — OpenRouter** (recommended, gives you many models on one key):
+
+1. Go to https://openrouter.ai → sign in with Google
+2. **Keys → Create Key**, copy `sk-or-v1-...`
+3. Set the env values:
+   ```env
+   OPENROUTER_API_KEY=sk-or-v1-...
+   OPENROUTER_VISION_MODEL=google/gemini-2.0-flash-exp:free
+   ```
+
+You can swap the model anytime — OpenRouter exposes Llama Vision,
+Qwen-VL and many others. Some are free, others are pay-per-token.
+
+**Option B — Google AI Studio** (single provider, simplest setup):
 
 1. Go to https://aistudio.google.com/app/apikey
 2. Create a new API key (free tier — 60 req/min, no monthly cap).
-3. Set `GEMINI_API_KEY=AIza...` in your env.
+3. Set `GEMINI_API_KEY=AIza...`
 
-Without the key, EXIF + OCR still work — only the AI panel is greyed
-out with an explanation.
+Without either key, EXIF + OCR still work — only the AI panel is greyed
+out with an explanation. If both keys are set, OpenRouter wins.
 
 ### Switching to real SMS (Twilio)
 

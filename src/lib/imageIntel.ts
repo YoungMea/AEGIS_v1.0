@@ -126,7 +126,7 @@ export async function readExif(dataUrl: string): Promise<ExifReadout> {
 }
 
 /* ------------------------------------------------------------------ */
-/* AI Vision (Google Gemini)                                          */
+/* AI Vision (Google Gemini OR OpenRouter)                             */
 /* ------------------------------------------------------------------ */
 
 export interface AiAnalysis {
@@ -142,6 +142,10 @@ export interface AiAnalysis {
     reasoning?: string;
   } | null;
   raw: string;
+  /** Which provider produced this analysis. */
+  provider: "gemini" | "openrouter";
+  /** Specific model used, e.g. "gemini-1.5-flash-latest". */
+  model: string;
 }
 
 const PROMPT = `You are an OSINT analyst. Examine the attached image and produce a JSON object with the following keys, and ONLY this JSON, no prose around it:
@@ -173,17 +177,39 @@ interface GeminiResponse {
   promptFeedback?: { blockReason?: string };
 }
 
-export async function aiVision(dataUrl: string): Promise<AiAnalysis | null> {
-  const apiKey = (process.env.GEMINI_API_KEY ?? "").trim();
-  if (!apiKey) return null;
+interface OpenAiCompatResponse {
+  choices?: Array<{
+    message?: { content?: string };
+    finish_reason?: string;
+  }>;
+  error?: { message?: string };
+}
 
+/**
+ * Pick which provider to call. OpenRouter wins when its key is set
+ * because it gives access to multiple models with one credential.
+ * Falls back to Gemini, then returns null when neither is configured.
+ */
+export async function aiVision(dataUrl: string): Promise<AiAnalysis | null> {
+  const orKey = (process.env.OPENROUTER_API_KEY ?? "").trim();
+  const geminiKey = (process.env.GEMINI_API_KEY ?? "").trim();
+
+  if (orKey) return aiVisionOpenRouter(dataUrl, orKey);
+  if (geminiKey) return aiVisionGemini(dataUrl, geminiKey);
+  return null;
+}
+
+async function aiVisionGemini(
+  dataUrl: string,
+  apiKey: string,
+): Promise<AiAnalysis | null> {
   const m = /^data:(image\/[^;]+);base64,(.*)$/i.exec(dataUrl);
   if (!m) return null;
   const mime = m[1]!;
   const base64 = m[2]!;
 
-  // Gemini 1.5 flash is the cheapest, supports vision and is on the free tier.
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`;
+  const model = "gemini-1.5-flash-latest";
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
   let res: Response;
   try {
@@ -232,7 +258,83 @@ export async function aiVision(dataUrl: string): Promise<AiAnalysis | null> {
   const json = (await res.json()) as GeminiResponse;
   const txt = json.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
   if (!txt) return null;
+  return parseAiResponse(txt, "gemini", model);
+}
 
+async function aiVisionOpenRouter(
+  dataUrl: string,
+  apiKey: string,
+): Promise<AiAnalysis | null> {
+  const m = /^data:(image\/[^;]+);base64,(.*)$/i.exec(dataUrl);
+  if (!m) return null;
+
+  // OpenRouter exposes many vision models. We default to Gemini 2.0 Flash
+  // (free tier) but allow the operator to override via env. The model name
+  // must support OpenAI-style vision messages.
+  const model =
+    (process.env.OPENROUTER_VISION_MODEL ?? "google/gemini-2.0-flash-exp:free")
+      .trim();
+
+  let res: Response;
+  try {
+    res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+        // Optional but recommended by OpenRouter — helps them attribute
+        // traffic and gives us a higher rate limit on the free tier.
+        "HTTP-Referer": process.env.OPENROUTER_SITE_URL ?? "https://aegis.local",
+        "X-Title": "AEGIS / OwlSight",
+      },
+      body: JSON.stringify({
+        model,
+        temperature: 0.2,
+        max_tokens: 800,
+        // Force JSON output where the model supports it. For free models
+        // that don't, the prompt itself instructs JSON-only output.
+        response_format: { type: "json_object" },
+        messages: [
+          {
+            role: "user",
+            content: [
+              { type: "text", text: PROMPT },
+              { type: "image_url", image_url: { url: dataUrl } },
+            ],
+          },
+        ],
+      }),
+    });
+  } catch {
+    return null;
+  }
+
+  if (!res.ok) {
+    // eslint-disable-next-line no-console
+    console.warn(
+      `[imageIntel:openrouter] ${res.status}: ${(await res.text()).slice(0, 200)}`,
+    );
+    return null;
+  }
+
+  const json = (await res.json()) as OpenAiCompatResponse;
+  const txt = json.choices?.[0]?.message?.content ?? "";
+  if (!txt) {
+    if (json.error?.message) {
+      // eslint-disable-next-line no-console
+      console.warn(`[imageIntel:openrouter] ${json.error.message}`);
+    }
+    return null;
+  }
+  return parseAiResponse(txt, "openrouter", model);
+}
+
+/** Common JSON parser shared by both providers. */
+function parseAiResponse(
+  txt: string,
+  provider: "gemini" | "openrouter",
+  model: string,
+): AiAnalysis {
   // Strip any markdown fence the model may have wrapped around the JSON.
   const cleaned = txt
     .replace(/^```(?:json)?\s*/i, "")
@@ -250,6 +352,8 @@ export async function aiVision(dataUrl: string): Promise<AiAnalysis | null> {
       textsFound: [],
       geoGuess: null,
       raw: txt,
+      provider,
+      model,
     };
   }
 
@@ -264,16 +368,30 @@ export async function aiVision(dataUrl: string): Promise<AiAnalysis | null> {
       : [],
     geoGuess: parsed.geoGuess ?? null,
     raw: txt,
+    provider,
+    model,
   };
 }
 
 export function isAiConfigured(): boolean {
-  return !!(process.env.GEMINI_API_KEY ?? "").trim();
+  return (
+    !!(process.env.OPENROUTER_API_KEY ?? "").trim() ||
+    !!(process.env.GEMINI_API_KEY ?? "").trim()
+  );
 }
 
-// Make the env-derived API name available to humans without leaking secrets.
+// Make the active provider visible to UI labels without leaking the key.
 export function aiProviderLabel(): string {
-  return "Google Gemini 1.5 Flash";
+  if ((process.env.OPENROUTER_API_KEY ?? "").trim()) {
+    const model =
+      (process.env.OPENROUTER_VISION_MODEL ??
+        "google/gemini-2.0-flash-exp:free").trim();
+    return `OpenRouter · ${model}`;
+  }
+  if ((process.env.GEMINI_API_KEY ?? "").trim()) {
+    return "Google Gemini 1.5 Flash";
+  }
+  return "AI offline";
 }
 
 // Re-export env so route handlers can warn the user when Gemini is missing
