@@ -208,7 +208,11 @@ async function aiVisionGemini(
   const mime = m[1]!;
   const base64 = m[2]!;
 
-  const model = "gemini-1.5-flash-latest";
+  // Google deprecated the "-latest" suffix and the v1beta model alias for
+  // 1.5-flash-latest. The current public name is "gemini-2.0-flash" (or
+  // "gemini-1.5-flash" for the older stable line). Allow the operator to
+  // override via env when Google ships a newer flagship.
+  const model = (process.env.GEMINI_VISION_MODEL ?? "gemini-2.0-flash").trim();
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
   let res: Response;
@@ -250,7 +254,7 @@ async function aiVisionGemini(
   if (!res.ok) {
     // eslint-disable-next-line no-console
     console.warn(
-      `[imageIntel:gemini] ${res.status}: ${(await res.text()).slice(0, 200)}`,
+      `[imageIntel:gemini] ${model} ${res.status}: ${(await res.text()).slice(0, 200)}`,
     );
     return null;
   }
@@ -389,7 +393,8 @@ export function aiProviderLabel(): string {
     return `OpenRouter · ${model}`;
   }
   if ((process.env.GEMINI_API_KEY ?? "").trim()) {
-    return "Google Gemini 1.5 Flash";
+    const model = (process.env.GEMINI_VISION_MODEL ?? "gemini-2.0-flash").trim();
+    return `Google ${model}`;
   }
   return "AI offline";
 }
