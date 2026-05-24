@@ -34,6 +34,7 @@ export const ru: Translation = {
     news: "Новости",
     support: "Поддержка",
     chat: "AntChat",
+    intel: "Image Intel",
   },
   profile: {
     operative: "Оперативник",
@@ -41,6 +42,7 @@ export const ru: Translation = {
     logout: "Выход",
     profile: "Профиль",
     activity: "Моя Активность",
+    notifications: "Уведомления",
     badge: "ПРОФИЛЬ ОПЕРАТИВНИКА",
     titlePart1: "Мой",
     titlePart2: "Профиль",
@@ -60,6 +62,65 @@ export const ru: Translation = {
     avatarTooLarge: "Аватар слишком большой",
     savedTitle: "Профиль обновлён",
     savedDesc: "Изменения видны другим оперативникам.",
+  },
+  notifications: {
+    title: "Уведомления",
+    subtitle:
+      "Будьте в курсе новых сообщений, даже когда AEGIS не активная вкладка.",
+    permissionLabel: "РАЗРЕШЕНИЕ БРАУЗЕРА",
+    permissionHint:
+      "Требуется для всплывающих уведомлений, когда вкладка в фоне.",
+    permissionAsk: "Разрешить",
+    permissionGranted: "РАЗРЕШЕНО",
+    permissionDenied: "ЗАБЛОКИРОВАНО · ВКЛЮЧИТЕ В НАСТРОЙКАХ БРАУЗЕРА",
+    permissionUnsupported: "НЕ ПОДДЕРЖИВАЕТСЯ НА ЭТОМ УСТРОЙСТВЕ",
+    notifyTitle: "Всплывающие уведомления",
+    notifyDesc:
+      "Показывать системное уведомление при новом сообщении в фоне.",
+    soundTitle: "Звуковые эффекты",
+    soundDesc: "Мягкий тактический звук на каждое новое сообщение.",
+    testSound: "Воспроизвести тест",
+  },
+  intel: {
+    badge: "IMAGE INTEL · OSINT",
+    titlePart1: "Image",
+    titlePart2: "Intel",
+    subtitle:
+      "Загрузите фото — AEGIS извлечёт EXIF, координаты GPS, текст на изображении и сделает AI-анализ сцены и геолокации через Google Gemini.",
+    targetTag: "ЦЕЛЬ",
+    dropTitle: "Перетащите изображение для анализа",
+    dropDesc:
+      "JPEG, PNG, WebP до 7 МБ. Оригиналы с камеры сохраняют больше метаданных.",
+    dropHint: "ПЕРЕТАЩИТЕ ИЛИ НАЖМИТЕ",
+    rerunMetadata: "Перечитать метаданные",
+    runOcr: "Распознать текст",
+    runAi: "Анализ AI",
+    aiRunning: "Запрос в Gemini",
+    aiTitle: "AI-анализ",
+    aiHint:
+      "Нажмите 'Анализ AI', чтобы Google Gemini описал сцену и попробовал угадать геолокацию.",
+    aiUnavailable:
+      "AI-анализ отключён — задайте GEMINI_API_KEY, чтобы включить Gemini.",
+    geoTitle: "Геолокация",
+    geoEmpty:
+      "GPS-метаданные не найдены. Запустите AI-анализ для визуальной оценки.",
+    metaTitle: "Метаданные (EXIF)",
+    ocrTitle: "Распознавание текста (OCR)",
+    ocrHint:
+      "Tesseract OCR работает прямо в браузере. Нажмите 'Распознать текст', чтобы извлечь надписи.",
+    ocrEmpty: "Текст не найден.",
+    ocrFailed: "OCR не сработал",
+    ocrConfidence: "ТОЧНОСТЬ",
+    sceneLabel: "СЦЕНА",
+    objectsLabel: "ОБЪЕКТЫ",
+    textsLabel: "ТЕКСТ НА ИЗОБРАЖЕНИИ",
+    confidenceLabel: "УВЕРЕННОСТЬ",
+    gpsFromExif: "ИЗ EXIF",
+    gpsFromAi: "AI ОЦЕНКА",
+    openInMaps: "Открыть на карте",
+    errorBadType: "Файл должен быть изображением",
+    errorTooBig: "Изображение должно быть до 7 МБ",
+    analyzeFailed: "Анализ не удался",
   },
   activity: {
     badge: "ЖУРНАЛ АКТИВНОСТИ",

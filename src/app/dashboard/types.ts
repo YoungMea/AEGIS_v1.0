@@ -13,6 +13,7 @@ export type DashboardSection =
   | "add"
   | "find"
   | "chat"
+  | "intel"
   | "news"
   | "support"
   | "profile"

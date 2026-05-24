@@ -209,5 +209,19 @@ export function getDb(): Database.Database {
   const db = new Database(file);
   init(db);
   globalThis.__aegisDb = db;
-  return db;
+
+  // Kick off the Telegram backup loop. The first cold start will also
+  // attempt a restore if the DB looks empty. Both are best-effort and
+  // never block the request handling.
+  void (async () => {
+    try {
+      const mod = await import("./backup");
+      await mod.ensureRecovered();
+      mod.startScheduler();
+    } catch {
+      /* backup is optional */
+    }
+  })();
+
+  return globalThis.__aegisDb;
 }

@@ -34,6 +34,7 @@ export const uz: Translation = {
     news: "Yangiliklar",
     support: "Yordam",
     chat: "AntChat",
+    intel: "Image Intel",
   },
   profile: {
     operative: "Operativ",
@@ -41,6 +42,7 @@ export const uz: Translation = {
     logout: "Chiqish",
     profile: "Profil",
     activity: "Mening Faoliyatim",
+    notifications: "Bildirishnomalar",
     badge: "OPERATIV PROFILI",
     titlePart1: "Mening",
     titlePart2: "Profilim",
@@ -60,6 +62,65 @@ export const uz: Translation = {
     avatarTooLarge: "Avatar juda katta",
     savedTitle: "Profil yangilandi",
     savedDesc: "O'zgartirishlar boshqa operativlarga ko'rinadi.",
+  },
+  notifications: {
+    title: "Bildirishnomalar",
+    subtitle:
+      "AEGIS faol tab bo'lmaganda ham yangi xabarlardan xabardor bo'ling.",
+    permissionLabel: "BRAUZER RUXSATI",
+    permissionHint:
+      "Tab fonda bo'lganda tizim bildirishnomalari ko'rsatish uchun kerak.",
+    permissionAsk: "Yoqish",
+    permissionGranted: "RUXSAT BERILGAN",
+    permissionDenied: "BLOKLANGAN · BRAUZER SOZLAMALARIDAN YOQING",
+    permissionUnsupported: "BU QURILMADA QO'LLAB-QUVVATLANMAYDI",
+    notifyTitle: "Pop-up bildirishnomalar",
+    notifyDesc:
+      "Boshqa tab ochiq bo'lganda yangi AntChat xabari kelganda tizim bildirishnomasi.",
+    soundTitle: "Ovoz effektlari",
+    soundDesc: "Har yangi xabarda nozik taktik signal.",
+    testSound: "Sinov ovozi",
+  },
+  intel: {
+    badge: "IMAGE INTEL · OSINT",
+    titlePart1: "Image",
+    titlePart2: "Intel",
+    subtitle:
+      "Rasmni tashlang, AEGIS EXIF metama'lumotlarini, GPS koordinatalarini, rasmda yozilgan matnni o'qiydi va Google Gemini orqali sahna va joyni taxmin qiladi.",
+    targetTag: "MAQSAD",
+    dropTitle: "Skanerlash uchun rasm tashlang",
+    dropDesc:
+      "JPEG, PNG, WebP, 7 MB gacha. Original kamera fayllari ko'proq metama'lumotlarni saqlaydi.",
+    dropHint: "TASHLANG YOKI BOSING",
+    rerunMetadata: "Metama'lumotni qaytadan",
+    runOcr: "Matnni o'qish",
+    runAi: "AI bilan tahlil qilish",
+    aiRunning: "Gemini'ga so'rov",
+    aiTitle: "AI Tahlili",
+    aiHint:
+      "Rasmni Google Gemini'ga yuborib sahna tavsifi va geografik taxminni olish uchun 'AI bilan tahlil' tugmasini bosing.",
+    aiUnavailable:
+      "AI tahlili o'chirilgan — yoqish uchun GEMINI_API_KEY ni o'rnating.",
+    geoTitle: "Geolokatsiya",
+    geoEmpty:
+      "GPS metama'lumotlari topilmadi. Rasmga qarab joyni taxmin qilish uchun AI tahlilini ishga tushiring.",
+    metaTitle: "Metama'lumot (EXIF)",
+    ocrTitle: "Matn o'qish (OCR)",
+    ocrHint:
+      "Tesseract OCR brauzeringizda ishlaydi. Ko'rinadigan matnlarni topish uchun 'Matnni o'qish' tugmasini bosing.",
+    ocrEmpty: "O'qiladigan matn topilmadi.",
+    ocrFailed: "OCR muvaffaqiyatsiz",
+    ocrConfidence: "ISHONCHLILIK",
+    sceneLabel: "SAHNA",
+    objectsLabel: "OB'EKTLAR",
+    textsLabel: "RASMDAGI MATN",
+    confidenceLabel: "ISHONCHLILIK",
+    gpsFromExif: "EXIF'DAN",
+    gpsFromAi: "AI TAXMINI",
+    openInMaps: "Xaritada ochish",
+    errorBadType: "Fayl rasm bo'lishi kerak",
+    errorTooBig: "Rasm 7 MB dan kichik bo'lsin",
+    analyzeFailed: "Tahlil muvaffaqiyatsiz",
   },
   activity: {
     badge: "AUDIT JURNALI",

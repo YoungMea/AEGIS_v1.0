@@ -16,6 +16,8 @@ import {
   MessageSquare,
   ScrollText,
   UserCircle,
+  Bell,
+  ScanLine,
 } from "lucide-react";
 import { Logo } from "@/components/ui/Logo";
 import { StatusBar } from "@/components/ui/StatusBar";
@@ -25,6 +27,7 @@ import { ToastProvider, useToast } from "@/components/ui/Toast";
 import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
 import { useI18n } from "@/components/i18n/I18nProvider";
 import { useChatStream } from "@/hooks/useChatStream";
+import { useNotifications } from "@/hooks/useNotifications";
 import { cn } from "@/lib/utils";
 import type { Dossier } from "@/lib/dossier";
 import type { DashboardSection, SessionUserDto } from "./types";
@@ -36,8 +39,10 @@ import { SupportSection } from "./sections/SupportSection";
 import { ChatSection } from "./sections/ChatSection";
 import { ProfileSection } from "./sections/ProfileSection";
 import { ActivitySection } from "./sections/ActivitySection";
+import { ImageIntelSection } from "./sections/ImageIntelSection";
 import { ChangePasswordModal } from "./modals/ChangePasswordModal";
 import { DossierViewModal } from "./modals/DossierViewModal";
+import { NotificationsModal } from "./modals/NotificationsModal";
 import { ChatFab } from "./ChatFab";
 
 interface Props {
@@ -61,12 +66,14 @@ function DashboardInner({ user, initialDossiers }: Props) {
   const [editingDossier, setEditingDossier] = useState<Dossier | null>(null);
   const [viewingDossier, setViewingDossier] = useState<Dossier | null>(null);
   const [showChangePw, setShowChangePw] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
   const [startChatPeerId, setStartChatPeerId] = useState<string | null>(null);
   const [chatUnread, setChatUnread] = useState(0);
 
   const router = useRouter();
   const toast = useToast();
   const { t } = useI18n();
+  const notifications = useNotifications();
 
   const refreshDossiers = useCallback(async () => {
     const res = await fetch("/api/dossiers");
@@ -110,6 +117,19 @@ function DashboardInner({ user, initialDossiers }: Props) {
       // If the chat section is open, ChatSection itself will mark it read.
       // We optimistically increment otherwise.
       setChatUnread((n) => n + 1);
+
+      // Browser notification + audible click. The hook already skips when
+      // the tab is focused — no double notifications.
+      const preview =
+        msg.kind === "text"
+          ? msg.body ?? ""
+          : msg.kind === "file"
+            ? "📎 File attachment"
+            : "📁 Dossier shared";
+      notifications.notify("AEGIS · New message", {
+        body: preview.slice(0, 140),
+        tag: `chat-${msg.senderId}`,
+      });
     },
   });
 
@@ -132,6 +152,7 @@ function DashboardInner({ user, initialDossiers }: Props) {
         onLogout={logout}
         onOpenProfile={() => setSection("profile")}
         onOpenActivity={() => setSection("activity")}
+        onOpenNotifications={() => setShowNotifications(true)}
         chatUnread={chatUnread}
       />
 
@@ -240,6 +261,18 @@ function DashboardInner({ user, initialDossiers }: Props) {
             </motion.div>
           )}
 
+          {section === "intel" && (
+            <motion.div
+              key="intel"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.25 }}
+            >
+              <ImageIntelSection />
+            </motion.div>
+          )}
+
           {section === "news" && (
             <motion.div
               key="news"
@@ -307,6 +340,11 @@ function DashboardInner({ user, initialDossiers }: Props) {
         )}
       </AnimatePresence>
       <AnimatePresence>
+        {showNotifications && (
+          <NotificationsModal onClose={() => setShowNotifications(false)} />
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
         {viewingDossier && (
           <DossierViewModal
             user={currentUser}
@@ -332,6 +370,7 @@ function TopBar({
   onLogout,
   onOpenProfile,
   onOpenActivity,
+  onOpenNotifications,
   chatUnread,
 }: {
   user: SessionUserDto;
@@ -341,6 +380,7 @@ function TopBar({
   onLogout: () => void;
   onOpenProfile: () => void;
   onOpenActivity: () => void;
+  onOpenNotifications: () => void;
   chatUnread: number;
 }) {
   const { t } = useI18n();
@@ -372,6 +412,7 @@ function TopBar({
       accent: true,
       badge: chatUnread,
     },
+    { id: "intel", label: t.nav.intel, icon: <ScanLine size={14} /> },
     { id: "news", label: t.nav.news, icon: <Newspaper size={14} /> },
     { id: "support", label: t.nav.support, icon: <Headphones size={14} /> },
   ];
@@ -458,6 +499,15 @@ function TopBar({
                     }}
                   >
                     {t.profile.activity}
+                  </MenuItem>
+                  <MenuItem
+                    icon={<Bell size={14} />}
+                    onClick={() => {
+                      setProfileOpen(false);
+                      onOpenNotifications();
+                    }}
+                  >
+                    {t.profile.notifications}
                   </MenuItem>
                   <MenuItem
                     icon={<KeyRound size={14} />}

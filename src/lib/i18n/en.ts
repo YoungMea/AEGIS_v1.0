@@ -34,6 +34,7 @@ export const en: Translation = {
     news: "News",
     support: "Support",
     chat: "AntChat",
+    intel: "Image Intel",
   },
   profile: {
     operative: "Operative",
@@ -41,6 +42,7 @@ export const en: Translation = {
     logout: "Logout",
     profile: "Profile",
     activity: "My Activity",
+    notifications: "Notifications",
     badge: "OPERATIVE PROFILE",
     titlePart1: "My",
     titlePart2: "Profile",
@@ -60,6 +62,65 @@ export const en: Translation = {
     avatarTooLarge: "Avatar is too large",
     savedTitle: "Profile updated",
     savedDesc: "Changes are visible to other operatives.",
+  },
+  notifications: {
+    title: "Notifications",
+    subtitle:
+      "Stay aware of new messages even when AEGIS isn't the active tab.",
+    permissionLabel: "BROWSER PERMISSION",
+    permissionHint:
+      "Required for native pop-up notifications when the tab is in the background.",
+    permissionAsk: "Enable",
+    permissionGranted: "GRANTED",
+    permissionDenied: "BLOCKED · ENABLE IN BROWSER SETTINGS",
+    permissionUnsupported: "NOT SUPPORTED ON THIS DEVICE",
+    notifyTitle: "Pop-up notifications",
+    notifyDesc:
+      "Show a system notification when a new AntChat message arrives in another tab.",
+    soundTitle: "Sound effects",
+    soundDesc: "Subtle tactical click on each new message.",
+    testSound: "Play test sound",
+  },
+  intel: {
+    badge: "IMAGE INTEL · OSINT",
+    titlePart1: "Image",
+    titlePart2: "Intel",
+    subtitle:
+      "Drop a photo and AEGIS extracts EXIF metadata, GPS coordinates, on-screen text and an AI scene/geo guess powered by Google Gemini.",
+    targetTag: "TARGET",
+    dropTitle: "Drop an image to scan",
+    dropDesc:
+      "JPEG, PNG, WebP up to 7 MB. Original camera files keep the most metadata.",
+    dropHint: "DROP OR CLICK TO BROWSE",
+    rerunMetadata: "Rerun metadata",
+    runOcr: "Read text",
+    runAi: "Analyze with AI",
+    aiRunning: "Asking Gemini",
+    aiTitle: "AI Analysis",
+    aiHint:
+      "Tap 'Analyze with AI' to send the image to Google Gemini for a scene description and a geographic guess.",
+    aiUnavailable:
+      "AI analysis is offline — set GEMINI_API_KEY to enable Gemini-powered scene + geo guesses.",
+    geoTitle: "Geolocation",
+    geoEmpty:
+      "No GPS metadata found. Run AI analysis to attempt a visual geo-guess.",
+    metaTitle: "Metadata (EXIF)",
+    ocrTitle: "Text extraction (OCR)",
+    ocrHint:
+      "Tesseract OCR runs locally in your browser. Tap 'Read text' to extract any visible text.",
+    ocrEmpty: "No readable text found.",
+    ocrFailed: "OCR failed",
+    ocrConfidence: "CONFIDENCE",
+    sceneLabel: "SCENE",
+    objectsLabel: "OBJECTS",
+    textsLabel: "TEXT IN IMAGE",
+    confidenceLabel: "CONFIDENCE",
+    gpsFromExif: "FROM EXIF",
+    gpsFromAi: "AI ESTIMATE",
+    openInMaps: "Open in maps",
+    errorBadType: "File must be an image",
+    errorTooBig: "Image must be under 7 MB",
+    analyzeFailed: "Analysis failed",
   },
   activity: {
     badge: "AUDIT LOG",

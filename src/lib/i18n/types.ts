@@ -53,6 +53,7 @@ export interface Translation {
     news: string;
     support: string;
     chat: string;
+    intel: string;
   };
   profile: {
     operative: string;
@@ -60,6 +61,7 @@ export interface Translation {
     logout: string;
     profile: string;
     activity: string;
+    notifications: string;
     badge: string;
     titlePart1: string;
     titlePart2: string;
@@ -79,6 +81,56 @@ export interface Translation {
     avatarTooLarge: string;
     savedTitle: string;
     savedDesc: string;
+  };
+  notifications: {
+    title: string;
+    subtitle: string;
+    permissionLabel: string;
+    permissionHint: string;
+    permissionAsk: string;
+    permissionGranted: string;
+    permissionDenied: string;
+    permissionUnsupported: string;
+    notifyTitle: string;
+    notifyDesc: string;
+    soundTitle: string;
+    soundDesc: string;
+    testSound: string;
+  };
+  intel: {
+    badge: string;
+    titlePart1: string;
+    titlePart2: string;
+    subtitle: string;
+    targetTag: string;
+    dropTitle: string;
+    dropDesc: string;
+    dropHint: string;
+    rerunMetadata: string;
+    runOcr: string;
+    runAi: string;
+    aiRunning: string;
+    aiTitle: string;
+    aiHint: string;
+    aiUnavailable: string;
+    geoTitle: string;
+    geoEmpty: string;
+    metaTitle: string;
+    ocrTitle: string;
+    ocrHint: string;
+    ocrEmpty: string;
+    ocrFailed: string;
+    ocrConfidence: string;
+    sceneLabel: string;
+    objectsLabel: string;
+    textsLabel: string;
+    confidenceLabel: string;
+    gpsFromExif: string;
+    gpsFromAi: string;
+    openInMaps: string;
+    errorBadType: string;
+    errorTooBig: string;
+    analyzeFailed: string;
   };
   activity: {
     badge: string;
