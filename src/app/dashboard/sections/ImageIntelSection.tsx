@@ -130,11 +130,22 @@ export function ImageIntelSection() {
   async function analyze(dataUrl: string, useAi: boolean) {
     if (useAi) setAiBusy(true);
     else setAnalyzing(true);
+
+    // Long-running AI calls can stall on the upstream provider. Time the
+    // request out so the spinner doesn't pin forever — the user can retry
+    // and we surface a clear error in the toast.
+    const controller = new AbortController();
+    const timeout = setTimeout(
+      () => controller.abort(),
+      useAi ? 90_000 : 15_000,
+    );
+
     try {
       const res = await fetch("/api/intel/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ dataUrl, useAi }),
+        signal: controller.signal,
       });
       const data = await res.json();
       if (!res.ok) {
@@ -151,9 +162,20 @@ export function ImageIntelSection() {
           ? { ...data, ai: prev.ai }
           : (data as AnalyzeResponse),
       );
-    } catch {
-      toast.push({ type: "error", title: t.common.networkError });
+    } catch (e) {
+      if ((e as Error).name === "AbortError") {
+        toast.push({
+          type: "error",
+          title: t.intel.analyzeFailed,
+          message: useAi
+            ? "AI provider took too long to respond"
+            : "Request timed out",
+        });
+      } else {
+        toast.push({ type: "error", title: t.common.networkError });
+      }
     } finally {
+      clearTimeout(timeout);
       setAnalyzing(false);
       setAiBusy(false);
     }

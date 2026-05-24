@@ -148,27 +148,51 @@ export interface AiAnalysis {
   model: string;
 }
 
-const PROMPT = `You are an OSINT analyst. Examine the attached image and produce a JSON object with the following keys, and ONLY this JSON, no prose around it:
+const PROMPT = `You are an OSINT geolocation specialist. Your job is to identify where the photo was taken using visible clues, even when there is no GPS metadata.
+
+WORK BACKWARDS THROUGH THESE LAYERS BEFORE GUESSING:
+
+1. ARCHITECTURE — minarets, domes, tile work, ornament style, building materials, roof type, balcony forms. Central Asian Timurid blue-tile mosques (Samarkand, Bukhara, Khiva) look very different from Persian, Ottoman, Mughal or Andalusian mosques. Russian Orthodox onion domes ≠ Greek Orthodox. Pay attention to MUQARNAS, MAJOLICA TILE PATTERNS, IWAN GATEWAYS, ribbed turquoise domes — these strongly indicate Uzbekistan / Central Asia.
+
+2. LANGUAGE & SCRIPT — signage, vehicle plates, posters, shop names. Cyrillic vs Latin vs Arabic vs Han vs Cyrillic-with-Uzbek-letters (ў, қ, ғ, ҳ). Plate format (3 letters + 3 digits + region code → Uzbekistan; 1 letter + 3 digits + 2 letters → Russia; etc.).
+
+3. VEGETATION & CLIMATE — palm trees, conifers, deciduous, dry steppe, jungle, snow, deciduous in autumn. Light angle, shadow length, sky colour.
+
+4. INFRASTRUCTURE — traffic light style, road markings (yellow/white), sign shapes, lamppost style, manhole covers, electrical pole construction, tile sidewalks.
+
+5. PEOPLE & DRESS — clothing style, headwear, footwear, modesty norms, school uniforms.
+
+6. VEHICLES — common car brands and ages. Damas, Nexia, Cobalt, Spark hint at Uzbekistan. Lada VAZ → CIS. Toyota K-trucks → Japan. etc.
+
+7. SUN/SHADOW — rough latitude from shadow length and direction.
+
+After collecting clues, REASON OUT LOUD inside the "reasoning" field. State which clues lead where. Then give a single best guess city and country with a confidence rating.
+
+CALIBRATION:
+- "high" only if you recognise a specific landmark (e.g. "Shah-i-Zinda necropolis, Samarkand" or "Eiffel Tower").
+- "medium" if architecture + script + climate strongly point to one country.
+- "low" otherwise. Better to say "low" than to invent.
+
+Output strictly valid JSON, no markdown fence, no prose around it:
 
 {
-  "summary": "one or two sentences describing the scene",
-  "scene": "indoor|outdoor|street|nature|vehicle|document|portrait|object|other",
-  "objects": ["short list of notable objects, animals, vehicles, brands, signs"],
-  "textsFound": ["any clearly readable text in the image, transcribed verbatim"],
+  "summary": "one or two sentences describing what is in the image",
+  "scene": "indoor|outdoor|street|nature|vehicle|document|portrait|object|monument|religious|other",
+  "objects": ["short list of notable objects, vehicles, brands, signs, plants, landmarks"],
+  "textsFound": ["any clearly readable text, transcribed verbatim — do NOT invent"],
   "geoGuess": {
     "country": "best guess country name in English, or null",
     "region": "state/province/region, or null",
     "city": "best guess city, or null",
     "confidence": "low|medium|high",
-    "reasoning": "1-2 sentence explanation of which clues led to this guess (architecture, signage, vegetation, license plates, language, …). Stay neutral, never claim certainty."
+    "reasoning": "2-4 sentences walking through the architectural / linguistic / vegetation clues that led to this guess. Be specific. If you recognise a famous landmark, name it."
   }
 }
 
 Rules:
-- If the image is not informative enough, set fields to null but always return the same shape.
-- Never invent text that isn't actually visible.
 - Never identify private individuals by name.
-- Output strictly valid JSON.`;
+- Never invent text that isn't actually visible.
+- If unsure between two countries, pick the one with the strongest evidence and lower the confidence.`;
 
 interface GeminiResponse {
   candidates?: Array<{
@@ -186,16 +210,44 @@ interface OpenAiCompatResponse {
 }
 
 /**
- * Pick which provider to call. OpenRouter wins when its key is set
- * because it gives access to multiple models with one credential.
- * Falls back to Gemini, then returns null when neither is configured.
+ * Pick which provider to call.
+ *
+ * Default order: **Gemini first** (Google's vision model knows landmarks
+ * across the world surprisingly well, and the free tier is generous), then
+ * fall back to OpenRouter when Gemini is missing or rate-limited. The
+ * operator can flip the order with AEGIS_AI_PRIMARY=openrouter.
+ *
+ * Returns null when neither provider is configured.
  */
 export async function aiVision(dataUrl: string): Promise<AiAnalysis | null> {
   const orKey = (process.env.OPENROUTER_API_KEY ?? "").trim();
   const geminiKey = (process.env.GEMINI_API_KEY ?? "").trim();
+  const primary = (process.env.AEGIS_AI_PRIMARY ?? "gemini").toLowerCase();
 
-  if (orKey) return aiVisionOpenRouter(dataUrl, orKey);
-  if (geminiKey) return aiVisionGemini(dataUrl, geminiKey);
+  const tryGemini = () =>
+    geminiKey ? aiVisionGemini(dataUrl, geminiKey) : Promise.resolve(null);
+  const tryOpenRouter = () =>
+    orKey ? aiVisionOpenRouter(dataUrl, orKey) : Promise.resolve(null);
+
+  if (primary === "openrouter") {
+    const r = await tryOpenRouter();
+    if (r) return r;
+    if (geminiKey) {
+      // eslint-disable-next-line no-console
+      console.warn("[imageIntel] OpenRouter failed, falling back to Gemini");
+      return tryGemini();
+    }
+    return null;
+  }
+
+  // Default: Gemini first.
+  const r = await tryGemini();
+  if (r) return r;
+  if (orKey) {
+    // eslint-disable-next-line no-console
+    console.warn("[imageIntel] Gemini failed, falling back to OpenRouter");
+    return tryOpenRouter();
+  }
   return null;
 }
 
@@ -217,6 +269,8 @@ async function aiVisionGemini(
 
   let res: Response;
   try {
+    const ac = new AbortController();
+    const to = setTimeout(() => ac.abort(), 60_000);
     res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -246,8 +300,12 @@ async function aiVisionGemini(
           },
         ],
       }),
+      signal: ac.signal,
     });
-  } catch {
+    clearTimeout(to);
+  } catch (e) {
+    // eslint-disable-next-line no-console
+    console.warn(`[imageIntel:gemini] fetch error: ${(e as Error).message}`);
     return null;
   }
 
@@ -303,6 +361,10 @@ async function aiVisionOpenRouter(
 
   let res: Response;
   try {
+    // 60s upstream timeout — Render's free tier kills requests after 100s,
+    // and OpenRouter free models occasionally take ~30-40s to start.
+    const ac = new AbortController();
+    const to = setTimeout(() => ac.abort(), 60_000);
     res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -314,8 +376,12 @@ async function aiVisionOpenRouter(
         "X-Title": "AEGIS / OwlSight",
       },
       body: JSON.stringify(body),
+      signal: ac.signal,
     });
-  } catch {
+    clearTimeout(to);
+  } catch (e) {
+    // eslint-disable-next-line no-console
+    console.warn(`[imageIntel:openrouter] fetch error: ${(e as Error).message}`);
     return null;
   }
 
@@ -392,13 +458,20 @@ export function isAiConfigured(): boolean {
 
 // Make the active provider visible to UI labels without leaking the key.
 export function aiProviderLabel(): string {
-  if ((process.env.OPENROUTER_API_KEY ?? "").trim()) {
+  const orKey = !!(process.env.OPENROUTER_API_KEY ?? "").trim();
+  const geminiKey = !!(process.env.GEMINI_API_KEY ?? "").trim();
+  const primary = (process.env.AEGIS_AI_PRIMARY ?? "gemini").toLowerCase();
+  if (primary !== "openrouter" && geminiKey) {
+    const model = (process.env.GEMINI_VISION_MODEL ?? "gemini-2.0-flash").trim();
+    return `Google ${model}`;
+  }
+  if (orKey) {
     const model =
       (process.env.OPENROUTER_VISION_MODEL ??
         "nvidia/nemotron-nano-12b-v2-vl:free").trim();
     return `OpenRouter · ${model}`;
   }
-  if ((process.env.GEMINI_API_KEY ?? "").trim()) {
+  if (geminiKey) {
     const model = (process.env.GEMINI_VISION_MODEL ?? "gemini-2.0-flash").trim();
     return `Google ${model}`;
   }
