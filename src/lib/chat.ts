@@ -222,13 +222,23 @@ export function getThread(
 export function markThreadRead(userId: string, peerId: string): number {
   const db = getDb();
   const key = conversationKey(userId, peerId);
+  const now = Date.now();
   const r = db
     .prepare(
       `UPDATE chat_messages
           SET read_at = ?
         WHERE conversation_key = ? AND recipient_id = ? AND read_at IS NULL`,
     )
-    .run(Date.now(), key, userId);
+    .run(now, key, userId);
+  if (r.changes > 0) {
+    // Notify the other side so its tick marks turn green in real-time.
+    broadcast({
+      type: "read",
+      conversationKey: key,
+      readerId: userId,
+      readAt: now,
+    });
+  }
   return r.changes;
 }
 

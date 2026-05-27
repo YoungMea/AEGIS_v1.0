@@ -57,7 +57,9 @@ export async function GET(req: NextRequest) {
       const unsubscribe = subscribe(
         (ev) => {
           if (ev.type === "message") sendEvent("message", ev.message);
-          else sendEvent("presence", ev);
+          else if (ev.type === "presence") sendEvent("presence", ev);
+          else if (ev.type === "read") sendEvent("read", ev);
+          else if (ev.type === "typing") sendEvent("typing", ev);
         },
         { userId: user.id },
       );

@@ -8,7 +8,20 @@ import type { ChatMessage } from "./chat";
 
 export type ChatEvent =
   | { type: "message"; message: ChatMessage }
-  | { type: "presence"; userId: string; online: boolean };
+  | { type: "presence"; userId: string; online: boolean }
+  | {
+      type: "read";
+      conversationKey: string;
+      readerId: string;
+      readAt: number;
+    }
+  | {
+      type: "typing";
+      conversationKey: string;
+      typerId: string;
+      /** Until what timestamp the typing should be visible. */
+      until: number;
+    };
 
 type Subscriber = (event: ChatEvent) => void;
 
@@ -66,26 +79,24 @@ export function subscribe(
 
 export function broadcast(event: ChatEvent): void {
   const store = getStore();
+
+  // Pre-compute the set of user ids that should receive this event.
+  let recipients: Set<string> | null = null;
+  if (event.type === "message") {
+    recipients = new Set([event.message.senderId, event.message.recipientId]);
+  } else if (event.type === "read" || event.type === "typing") {
+    // Conversation key is "<userIdA>:<userIdB>" in sorted order.
+    const [a, b] = event.conversationKey.split(":");
+    recipients = new Set([a!, b!]);
+  }
+  // Presence: deliver to every active subscriber.
+
   for (const sub of store.subscribers.values()) {
-    if (event.type === "message") {
-      // Only notify sender and recipient.
-      if (
-        sub.userId === event.message.senderId ||
-        sub.userId === event.message.recipientId
-      ) {
-        try {
-          sub.fn(event);
-        } catch {
-          /* keep going */
-        }
-      }
-    } else {
-      // Presence: deliver to everyone.
-      try {
-        sub.fn(event);
-      } catch {
-        /* keep going */
-      }
+    if (recipients && !recipients.has(sub.userId)) continue;
+    try {
+      sub.fn(event);
+    } catch {
+      /* keep going */
     }
   }
 }

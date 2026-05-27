@@ -82,6 +82,18 @@ export function ChatSection({
       // Always refresh list so previews and unread counters stay correct.
       void refreshConversations();
     },
+    // When the peer reads our messages, flip the tick marks instantly.
+    onRead: (ev) => {
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.senderId === user.id &&
+          m.recipientId === ev.readerId &&
+          (m.readAt ?? 0) < ev.readAt
+            ? { ...m, readAt: ev.readAt }
+            : m,
+        ),
+      );
+    },
   });
 
   const refreshConversations = useCallback(async () => {
@@ -662,12 +674,69 @@ function Bubble({ message, mine }: { message: ChatMessage; mine: boolean }) {
         {message.kind === "dossier" && message.dossier && (
           <DossierBubble snap={message.dossier.snapshot} />
         )}
-        <div className="mt-1 flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.22em] text-white/35">
+        <div
+          className={cn(
+            "mt-1 flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.22em]",
+            mine ? "justify-end" : "justify-start",
+            "text-white/35",
+          )}
+        >
           <Lock size={9} />
-          {formatDate(message.createdAt, true)}
+          <span>{formatDate(message.createdAt, true)}</span>
+          {/* Read receipts (own messages only):
+              ✓     = sent / not yet delivered
+              ✓✓    = delivered, peer hasn't opened the thread
+              ✓✓ ★ = read (read_at populated). We use the same double tick
+              but tinted emerald to match the rest of the UI. */}
+          {mine && (
+            <span
+              aria-label={message.readAt ? "read" : "delivered"}
+              className={cn(
+                "inline-flex items-center -ml-0.5 leading-none",
+                message.readAt ? "text-emerald-glow" : "text-white/35",
+              )}
+              title={
+                message.readAt
+                  ? `Read at ${formatDate(message.readAt, true)}`
+                  : "Delivered"
+              }
+            >
+              <CheckTicks read={!!message.readAt} />
+            </span>
+          )}
         </div>
       </div>
     </div>
+  );
+}
+
+/** Compact double-tick SVG, identical to the WhatsApp/Telegram pattern. */
+function CheckTicks({ read }: { read: boolean }) {
+  return (
+    <svg
+      width="14"
+      height="9"
+      viewBox="0 0 14 9"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden
+    >
+      <path
+        d="M1 5L3.2 7L7.5 1.5"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M5.5 5L7.7 7L13 1"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        opacity={read ? 1 : 0.55}
+      />
+    </svg>
   );
 }
 

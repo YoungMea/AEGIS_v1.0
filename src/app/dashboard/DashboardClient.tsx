@@ -399,7 +399,8 @@ function TopBar({
     id: DashboardSection;
     label: string;
     icon: React.ReactNode;
-    accent?: boolean;
+    accent?: "emerald" | "amber";
+    accentLabel?: string;
     badge?: number;
   }[] = [
     { id: "database", label: t.nav.database, icon: <Folder size={14} /> },
@@ -409,10 +410,17 @@ function TopBar({
       id: "chat",
       label: t.nav.chat,
       icon: <MessageSquare size={14} />,
-      accent: true,
+      accent: "emerald",
+      accentLabel: "LIVE",
       badge: chatUnread,
     },
-    { id: "owlSight", label: t.nav.owlSight, icon: <ScanLine size={14} /> },
+    {
+      id: "owlSight",
+      label: t.nav.owlSight,
+      icon: <ScanLine size={14} />,
+      accent: "amber",
+      accentLabel: "AI",
+    },
     { id: "news", label: t.nav.news, icon: <Newspaper size={14} /> },
     { id: "support", label: t.nav.support, icon: <Headphones size={14} /> },
   ];
@@ -540,7 +548,22 @@ function TopBar({
         {tabs.map((tab) => {
           const active = section === tab.id;
           const showBadge = tab.badge && tab.badge > 0;
-          const isAccent = !!tab.accent;
+          const accent = tab.accent; // "emerald" | "amber" | undefined
+          const isAccent = !!accent;
+          const accentColors =
+            accent === "amber"
+              ? {
+                  text: "text-amber-glow/90 hover:text-amber-glow",
+                  bgBorder: "border-amber-glow/30 bg-amber-glow/[0.04]",
+                  dot: "bg-amber-glow",
+                  label: "text-amber-glow",
+                }
+              : {
+                  text: "text-emerald-glow/90 hover:text-emerald-glow",
+                  bgBorder: "border-emerald-glow/30 bg-emerald-glow/[0.04]",
+                  dot: "bg-emerald-glow animate-pulseDot",
+                  label: "text-emerald-glow",
+                };
           return (
             <button
               key={tab.id}
@@ -550,30 +573,40 @@ function TopBar({
                 active
                   ? "text-emerald-glow"
                   : isAccent
-                    ? "text-emerald-glow/90 hover:text-emerald-glow"
+                    ? accentColors.text
                     : "text-white/55 hover:text-white",
               )}
             >
-              {/* Glowing background for the AntChat tab so it never blends with the others */}
+              {/* Glowing background for accented tabs so they never blend in */}
               {isAccent && !active && (
                 <span
                   aria-hidden
-                  className="absolute inset-0 -z-10 rounded-md border border-emerald-glow/30 bg-emerald-glow/[0.04]"
+                  className={cn(
+                    "absolute inset-0 -z-10 rounded-md border",
+                    accentColors.bgBorder,
+                  )}
                 />
               )}
 
               {tab.icon}
               <span>{tab.label}</span>
 
-              {/* "live" indicator on the AntChat tab when it's not the active one */}
-              {isAccent && !active && (
-                <span className="hidden sm:inline-flex items-center gap-1 ml-1 font-mono text-[9px] tracking-[0.22em] text-emerald-glow">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-glow animate-pulseDot" />
-                  LIVE
+              {/* Accent label (LIVE / AI) when the tab isn't active */}
+              {isAccent && !active && tab.accentLabel && (
+                <span
+                  className={cn(
+                    "hidden sm:inline-flex items-center gap-1 ml-1 font-mono text-[9px] tracking-[0.22em]",
+                    accentColors.label,
+                  )}
+                >
+                  <span
+                    className={cn("h-1.5 w-1.5 rounded-full", accentColors.dot)}
+                  />
+                  {tab.accentLabel}
                 </span>
               )}
 
-              {/* unread bubble */}
+              {/* Unread bubble */}
               {showBadge && (
                 <span
                   className={cn(
