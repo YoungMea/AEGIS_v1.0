@@ -35,6 +35,7 @@ export const en: Translation = {
     support: "Support",
     chat: "AntChat",
     owlSight: "OwlSight",
+    wing: "Wing",
   },
   profile: {
     operative: "Operative",
@@ -122,6 +123,24 @@ export const en: Translation = {
     errorBadType: "File must be an image",
     errorTooBig: "Image must be under 7 MB",
     analyzeFailed: "Analysis failed",
+  },
+  wing: {
+    badge: "WING · GEO ATLAS",
+    titlePart1: "W",
+    titlePart2: "ing",
+    subtitle:
+      "Every dossier with a city or country — projected onto a tactical world map. Click a marker to inspect everyone tied to that location.",
+    cities: "CITIES",
+    statDossiers: "DOSSIERS",
+    highRisk: "HIGH RISK",
+    refresh: "Refresh",
+    loading: "Geocoding…",
+    emptyTitle: "No mapped dossiers yet",
+    emptyDesc:
+      "Set a city or country on a dossier and Wing will pin it on the map.",
+    dossiersHere: "dossier(s)",
+    openInOsm: "Open in OpenStreetMap",
+    legendLabel: "RISK LEGEND ·",
   },
   activity: {
     badge: "AUDIT LOG",

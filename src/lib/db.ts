@@ -153,6 +153,19 @@ function init(db: Database.Database) {
       PRIMARY KEY (bucket, key)
     );
 
+    -- Geocode cache: maps "<city>, <country>" → lat/lng so we never hit
+    -- Nominatim more than once per location. The cache is shared across
+    -- users — coordinates of public places are not sensitive, and this
+    -- keeps the Wing map snappy even on free hosting.
+    CREATE TABLE IF NOT EXISTS geocode_cache (
+      query        TEXT PRIMARY KEY,  -- normalised lowercase "city, country"
+      lat          REAL,
+      lng          REAL,
+      display_name TEXT,
+      hit_at       INTEGER NOT NULL,
+      created_at   INTEGER NOT NULL
+    );
+
     -- Audit trail: every meaningful operative action gets a row so the user
     -- can see "what did I touch" inside My Activity. Detail is a small JSON
     -- blob with action-specific extras (e.g. dossier id, peer uid).

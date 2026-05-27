@@ -54,6 +54,7 @@ export interface Translation {
     support: string;
     chat: string;
     owlSight: string;
+    wing: string;
   };
   profile: {
     operative: string;
@@ -132,6 +133,22 @@ export interface Translation {
     errorBadType: string;
     errorTooBig: string;
     analyzeFailed: string;
+  };
+  wing: {
+    badge: string;
+    titlePart1: string;
+    titlePart2: string;
+    subtitle: string;
+    cities: string;
+    statDossiers: string;
+    highRisk: string;
+    refresh: string;
+    loading: string;
+    emptyTitle: string;
+    emptyDesc: string;
+    dossiersHere: string;
+    openInOsm: string;
+    legendLabel: string;
   };
   activity: {
     badge: string;

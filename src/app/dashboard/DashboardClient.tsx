@@ -18,6 +18,7 @@ import {
   UserCircle,
   Bell,
   ScanLine,
+  Map,
 } from "lucide-react";
 import { Logo } from "@/components/ui/Logo";
 import { StatusBar } from "@/components/ui/StatusBar";
@@ -40,6 +41,7 @@ import { ChatSection } from "./sections/ChatSection";
 import { ProfileSection } from "./sections/ProfileSection";
 import { ActivitySection } from "./sections/ActivitySection";
 import { ImageIntelSection } from "./sections/ImageIntelSection";
+import { WingSection } from "./sections/WingSection";
 import { ChangePasswordModal } from "./modals/ChangePasswordModal";
 import { DossierViewModal } from "./modals/DossierViewModal";
 import { NotificationsModal } from "./modals/NotificationsModal";
@@ -273,6 +275,18 @@ function DashboardInner({ user, initialDossiers }: Props) {
             </motion.div>
           )}
 
+          {section === "wing" && (
+            <motion.div
+              key="wing"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.25 }}
+            >
+              <WingSection />
+            </motion.div>
+          )}
+
           {section === "news" && (
             <motion.div
               key="news"
@@ -420,6 +434,13 @@ function TopBar({
       icon: <ScanLine size={14} />,
       accent: "amber",
       accentLabel: "AI",
+    },
+    {
+      id: "wing",
+      label: t.nav.wing,
+      icon: <Map size={14} />,
+      accent: "amber",
+      accentLabel: "GEO",
     },
     { id: "news", label: t.nav.news, icon: <Newspaper size={14} /> },
     { id: "support", label: t.nav.support, icon: <Headphones size={14} /> },

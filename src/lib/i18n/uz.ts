@@ -35,6 +35,7 @@ export const uz: Translation = {
     support: "Yordam",
     chat: "AntChat",
     owlSight: "OwlSight",
+    wing: "Wing",
   },
   profile: {
     operative: "Operativ",
@@ -122,6 +123,24 @@ export const uz: Translation = {
     errorBadType: "Fayl rasm bo'lishi kerak",
     errorTooBig: "Rasm 7 MB dan kichik bo'lsin",
     analyzeFailed: "Tahlil muvaffaqiyatsiz",
+  },
+  wing: {
+    badge: "WING · GEO ATLAS",
+    titlePart1: "W",
+    titlePart2: "ing",
+    subtitle:
+      "Shahar yoki davlat ko'rsatilgan har bir fayl — taktik dunyo xaritasiga proeksiya qilingan. Belgini bosib o'sha joydagi barcha fayllarni ko'ring.",
+    cities: "SHAHARLAR",
+    statDossiers: "FAYLLAR",
+    highRisk: "YUQORI XAVF",
+    refresh: "Yangilash",
+    loading: "Geokodlash…",
+    emptyTitle: "Xaritada hali fayl yo'q",
+    emptyDesc:
+      "Faylga shahar yoki davlat qo'shing — Wing uni xaritada belgilab beradi.",
+    dossiersHere: "ta fayl",
+    openInOsm: "OpenStreetMap'da ochish",
+    legendLabel: "XAVF LEGENDASI ·",
   },
   activity: {
     badge: "AUDIT JURNALI",

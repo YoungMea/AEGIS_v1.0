@@ -35,6 +35,7 @@ export const ru: Translation = {
     support: "Поддержка",
     chat: "AntChat",
     owlSight: "OwlSight",
+    wing: "Wing",
   },
   profile: {
     operative: "Оперативник",
@@ -122,6 +123,24 @@ export const ru: Translation = {
     errorBadType: "Файл должен быть изображением",
     errorTooBig: "Изображение должно быть до 7 МБ",
     analyzeFailed: "Анализ не удался",
+  },
+  wing: {
+    badge: "WING · ГЕО АТЛАС",
+    titlePart1: "W",
+    titlePart2: "ing",
+    subtitle:
+      "Каждое дело с городом или страной — спроецировано на тактическую карту мира. Кликните по маркеру, чтобы увидеть все привязанные к этой точке дела.",
+    cities: "ГОРОДА",
+    statDossiers: "ДЕЛА",
+    highRisk: "ВЫСОКИЙ РИСК",
+    refresh: "Обновить",
+    loading: "Геокодирование…",
+    emptyTitle: "На карте пока нет дел",
+    emptyDesc:
+      "Укажите город или страну в деле — Wing закрепит его на карте.",
+    dossiersHere: "дел",
+    openInOsm: "Открыть в OpenStreetMap",
+    legendLabel: "ЛЕГЕНДА РИСКА ·",
   },
   activity: {
     badge: "ЖУРНАЛ АКТИВНОСТИ",

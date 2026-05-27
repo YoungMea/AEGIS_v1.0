@@ -81,6 +81,15 @@ db.exec(`
     PRIMARY KEY (bucket, key)
   );
 
+  CREATE TABLE IF NOT EXISTS geocode_cache (
+    query        TEXT PRIMARY KEY,
+    lat          REAL,
+    lng          REAL,
+    display_name TEXT,
+    hit_at       INTEGER NOT NULL,
+    created_at   INTEGER NOT NULL
+  );
+
   CREATE TABLE IF NOT EXISTS audit_log (
     id          TEXT PRIMARY KEY,
     user_id     TEXT NOT NULL,
