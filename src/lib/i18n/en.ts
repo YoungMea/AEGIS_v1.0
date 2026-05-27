@@ -496,35 +496,71 @@ export const en: Translation = {
         cta: "Try the demo",
       },
       hawkeye: {
-        category: "MODULE · UPCOMING",
-        date: "2026-05-18",
-        title: "HawkEye joins AEGIS — username intelligence at your fingertips",
+        category: "MODULE · LIVE",
+        date: "2026-05-27",
+        title: "HawkEye — deep cross-platform reconnaissance is live",
         blurb:
-          "HawkEye brings the power of Sherlock — the open-source username search tool — into the AEGIS console. Hunt accounts across hundreds of platforms in seconds.",
+          "HawkEye is now AEGIS's full-spectrum OSINT module: username, email and phone lookups across ten platforms, archived snapshots from the Wayback Machine, public Instagram metadata and a Gemini-powered identity narrative — all filed into a dossier with one click.",
         body: [
-          "HawkEye is the upcoming OSINT module for AEGIS, powered by Sherlock — the well-known Linux command-line tool that searches for a target username across hundreds of social networks.",
-          "We are wrapping Sherlock with a tactical UI layer: type a handle, watch live-scan animations as we ping each platform, and review the resulting matches inside a dossier-style report. Each hit can be one-click attached to an existing dossier as evidence.",
-          "Where Sherlock prints raw URLs, HawkEye groups results by category — social, gaming, dating, professional, dev — and surfaces fuzzy matches and metadata where the platform exposes it.",
+          "HawkEye started as a username probe. The latest release rebuilds it from the ground up as a deep-recon engine. Three modes — username, email, phone — fan out in parallel against Telegram, TikTok, Instagram, Snapchat, Blink, GitHub, Gravatar, WhatsApp, Viber and Signal.",
+          "Public Instagram profiles are parsed in detail: bio, follower / following / post counts, avatar, verified and private flags. When a profile is now private, the Wayback Machine pulls the last public snapshot so the trail isn't lost.",
+          "An AI Identity Narrative stitches everything together. The platform sends every confirmed account, archived snapshot and Instagram readout to Google Gemini (or an OpenRouter fallback) and gets back a 3–4 sentence summary, a 0–100 confidence score, and a list of risk hints.",
+          "The 'Save to dossier' button takes the entire report — links into Social Media, the Instagram avatar into Evidence Images, the AI summary into Additional Evidence — and merges it into any existing dossier in one round-trip.",
         ],
         highlights: [
           {
-            title: "Live scan animation",
-            desc: "Watch dozens of probes resolve in real time, each annotated with response codes and screenshots when available.",
+            title: "Three input modes",
+            desc: "Username, email or phone — HawkEye routes each to the right set of probes and platforms automatically.",
           },
           {
-            title: "Dossier integration",
-            desc: "Confirmed accounts can be filed into a target dossier with one tap — preserved with timestamp and source.",
+            title: "Wayback timeline",
+            desc: "Last 20 archived snapshots across Instagram, TikTok, Telegram, Twitter / X and GitHub. Useful even after the live profile is taken private.",
           },
           {
-            title: "Powered by Sherlock",
-            desc: "Built on top of the battle-tested Sherlock project. Hundreds of platforms, regularly updated.",
+            title: "Public Instagram metadata",
+            desc: "Followers, following, posts, bio and avatar — login-free, public accounts only.",
           },
           {
-            title: "Tactical reporting",
-            desc: "Export findings as a HawkEye Brief — printable, embeddable, classified-styled.",
+            title: "AI Identity Narrative",
+            desc: "Gemini or OpenRouter weaves the matches into a confidence-scored summary with risk hints.",
+          },
+          {
+            title: "One-click dossier append",
+            desc: "All collected links go into Social Media, the avatar into Evidence Images, the narrative into Additional Evidence — perfectly preserving NoLook encryption.",
           },
         ],
-        cta: "Coming soon",
+        cta: "Open HawkEye",
+      },
+      wing: {
+        category: "MODULE · LIVE",
+        date: "2026-05-27",
+        title: "Wing — every dossier on a tactical map",
+        blurb:
+          "Wing projects every dossier with a city or country onto a dark CARTO map. Click a marker to see every operative tied to that location, filtered by risk level.",
+        body: [
+          "Wing is the new geographic atlas tab. It pulls each of your dossiers, normalises 'city, country' through Nominatim and pins the results on a tactical Leaflet map.",
+          "Geocoded coordinates are cached in a dedicated SQLite table — the first scan respects Nominatim's 1 request/second policy, every subsequent scan loads instantly. Negative hits are cached too, so unknown places never burn quota twice.",
+          "Markers are sized by dossier count and coloured by the highest risk level present. A risk filter (LOW / MEDIUM / HIGH / CRITICAL) lets you isolate threats at a glance.",
+        ],
+        highlights: [
+          {
+            title: "Live geocoding",
+            desc: "Nominatim resolves city + country to coordinates — no API key, fully cached after the first hit.",
+          },
+          {
+            title: "Risk-toned markers",
+            desc: "Each pin is sized by dossier count and tinted by the highest risk on that location.",
+          },
+          {
+            title: "Risk filter",
+            desc: "Toggle LOW / MEDIUM / HIGH / CRITICAL to focus the map on what matters.",
+          },
+          {
+            title: "OSM hand-off",
+            desc: "One click opens the location on OpenStreetMap with the marker pre-positioned.",
+          },
+        ],
+        cta: "Open Wing",
       },
       noLook: {
         category: "SECURITY · LIVE",

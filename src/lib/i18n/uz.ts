@@ -496,35 +496,71 @@ export const uz: Translation = {
         cta: "Demoni sinab ko'ring",
       },
       hawkeye: {
-        category: "MODUL · KELMOQDA",
-        date: "2026-05-18",
-        title: "HawkEye AEGIS ga qo'shilmoqda — username razvedkasi qo'lingizda",
+        category: "MODUL · FAOL",
+        date: "2026-05-27",
+        title: "HawkEye — chuqur tarmoqlararo razvedka faol",
         blurb:
-          "HawkEye Sherlock'ning kuchini — ochiq kodli foydalanuvchi nomini qidirish vositasini — AEGIS konsoliga olib keladi. Yuzlab platformalarda akkauntlarni soniyalar ichida qidiring.",
+          "HawkEye endi AEGIS'ning to'liq spektrli OSINT moduli: 10 ta platformada username, email va telefon qidiruvi, Wayback Machine'dan arxiv snimkalari, ochiq Instagram metama'lumotlari va Gemini orqali shaxsiyat-narrativ — barchasi bir bosishda dossier'ga ulanadi.",
         body: [
-          "HawkEye — AEGIS uchun yaqinlashayotgan OSINT moduli. U Sherlock asosida ishlaydi — yuzlab ijtimoiy tarmoqlar bo'ylab foydalanuvchi nomini qidiruvchi mashhur Linux komand qatori vositasi.",
-          "Biz Sherlockni taktik UI qatlami bilan o'rashtiramiz: foydalanuvchi nomini kiriting, har bir platformani ping qilganda jonli skan animatsiyasini kuzating, va natijalarni fayl ko'rinishidagi hisobotda ko'ring. Har bir natija bir tugma bilan mavjud faylga dalil sifatida biriktirilishi mumkin.",
-          "Sherlock faqat URL chiqaradigan joyda, HawkEye natijalarni toifalar bo'yicha guruhlaydi — ijtimoiy, o'yin, tanishuv, professional, dasturlash — va platforma ruxsat bersa metama'lumotlar ham ko'rsatiladi.",
+          "HawkEye username probesidan boshlangan edi. Bugungi reliz uni boshqatdan chuqur razvedka modulida qayta qurdi. Uchta rejim — username, email, telefon — Telegram, TikTok, Instagram, Snapchat, Blink, GitHub, Gravatar, WhatsApp, Viber va Signal'da parallel ishlaydi.",
+          "Ochiq Instagram profillari batafsil tahlil qilinadi: bio, follower / following / post hisoblari, avatar, verified va private bayroqlar. Profil yopilgan bo'lsa Wayback Machine oxirgi ochiq nusxani olib keladi — iz yo'qolmaydi.",
+          "AI Identity Narrative hammasini birlashtiradi. Platforma har bir tasdiqlangan akkaunt, arxiv snimka va Instagram ma'lumotlarini Google Gemini'ga (yoki OpenRouter fallback'iga) yuboradi va 3-4 jumla xulosa, 0-100 ishonch darajasi va risk hint'larni qaytarib oladi.",
+          "'Dossier'ga ulash' tugmasi to'liq hisobotni — linklarni Social Media bo'limiga, Instagram avatar'ini Evidence Images'ga, AI summary'ni Additional Evidence'ga — bir so'rovda mavjud dossier'ga qo'shadi.",
         ],
         highlights: [
           {
-            title: "Jonli skan animatsiyasi",
-            desc: "Onlarcha tekshiruvlarning real vaqtda hal bo'lishini kuzating, har biri javob kodi va skrinshot bilan.",
+            title: "Uch rejim",
+            desc: "Username, email yoki telefon — HawkEye har birini avtomatik mos probe va platformalarga yo'naltiradi.",
           },
           {
-            title: "Faylga integratsiya",
-            desc: "Tasdiqlangan akkauntlarni bir tugma bilan maqsadli faylga qo'shing — vaqt va manba bilan saqlanadi.",
+            title: "Wayback xronikasi",
+            desc: "Instagram, TikTok, Telegram, Twitter / X va GitHub bo'yicha oxirgi 20 ta arxiv snimkasi. Profil yopilgandan keyin ham foydali.",
           },
           {
-            title: "Sherlock asosida",
-            desc: "Sinovdan o'tgan Sherlock loyihasi ustida qurilgan. Yuzlab platformalar, muntazam yangilanadigan.",
+            title: "Ochiq Instagram metama'lumotlari",
+            desc: "Followers, following, posts, bio va avatar — login'siz, faqat ochiq akkauntlar uchun.",
           },
           {
-            title: "Taktik hisobot",
-            desc: "Natijalarni HawkEye Brief sifatida eksport qiling — chop etiladigan, joylashtiriladigan, maxfiy uslubdagi.",
+            title: "AI Identity Narrative",
+            desc: "Gemini yoki OpenRouter natijalarni ishonch darajali xulosa va risk hint'lar bilan birlashtiradi.",
+          },
+          {
+            title: "Bir bosishda dossier'ga",
+            desc: "Yig'ilgan barcha linklar Social Media'ga, avatar Evidence Images'ga, narrativ Additional Evidence'ga — NoLook shifrlanishini saqlab.",
           },
         ],
-        cta: "Tez orada",
+        cta: "HawkEye'ni ochish",
+      },
+      wing: {
+        category: "MODUL · FAOL",
+        date: "2026-05-27",
+        title: "Wing — har bir dossier taktik xaritada",
+        blurb:
+          "Wing shahar yoki davlat ko'rsatilgan har bir dossier'ni qora CARTO xaritasiga proeksiya qiladi. Belgini bosib o'sha joydagi barcha operatorlarni xavf darajasi bo'yicha ko'ring.",
+        body: [
+          "Wing — yangi geografik atlas tab'i. Dossier'laringizni oladi, 'shahar, davlat'ni Nominatim orqali normalize qiladi va natijalarni taktik Leaflet xaritasiga belgilaydi.",
+          "Geokodlangan koordinatalar maxsus SQLite jadvalga keshlanadi — birinchi skan Nominatim'ning soniyada 1 so'rov siyosatiga rioya qiladi, keyingisida bir zumda yuklanadi. Negative natijalar ham keshlanadi — noma'lum joylar quotani ikki marta yondirmaydi.",
+          "Belgilar dossier hisobi bo'yicha o'lchamlanadi va eng yuqori xavf darajasi rangiga bo'yaladi. Risk filter (LOW / MEDIUM / HIGH / CRITICAL) tahdidlarni ajratib ko'rsatadi.",
+        ],
+        highlights: [
+          {
+            title: "Jonli geokodlash",
+            desc: "Nominatim shahar + davlatni koordinatalarga aylantiradi — API key kerak emas, birinchi natijadan keyin to'liq keshlanadi.",
+          },
+          {
+            title: "Xavf-rangli belgilar",
+            desc: "Har pin dossier hisobi bo'yicha o'lchamlanadi va o'sha joydagi eng yuqori xavfga bo'yaladi.",
+          },
+          {
+            title: "Xavf filtri",
+            desc: "LOW / MEDIUM / HIGH / CRITICAL'ni almashtirib xaritani muhim narsalarga qarating.",
+          },
+          {
+            title: "OSM ulanishi",
+            desc: "Bir bosish joyni OpenStreetMap'da belgi oldindan joylashtirilgan holda ochadi.",
+          },
+        ],
+        cta: "Wing'ni ochish",
       },
       noLook: {
         category: "XAVFSIZLIK · FAOL",

@@ -458,6 +458,7 @@ export interface Translation {
     items: {
       aegisDemo: NewsItem;
       hawkeye: NewsItem;
+      wing: NewsItem;
       noLook: NewsItem;
       antChat: NewsItem;
       owlSight: NewsItem;

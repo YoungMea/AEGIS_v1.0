@@ -88,10 +88,15 @@ async function timed(
       headers: {
         "User-Agent": UA,
         "Accept-Language": "en-US,en;q=0.7",
+        Accept: "application/json, text/plain, */*",
         ...(opts.headers ?? {}),
       },
     });
-  } catch {
+  } catch (e) {
+    // eslint-disable-next-line no-console
+    console.warn(
+      `[eagleEye:fetch] ${url.slice(0, 80)} -> ${(e as Error).message}`,
+    );
     return null;
   } finally {
     clearTimeout(t);
@@ -447,7 +452,7 @@ async function callOpenRouter(
   // text-only free model that's better at JSON; allow override via env.
   const model = (
     process.env.OPENROUTER_TEXT_MODEL ??
-    "google/gemma-2-9b-it:free"
+    "google/gemma-4-26b-a4b-it:free"
   ).trim();
   const ac = new AbortController();
   const t = setTimeout(() => ac.abort(), 45_000);
