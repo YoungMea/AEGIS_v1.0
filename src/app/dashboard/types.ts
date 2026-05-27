@@ -16,6 +16,7 @@ export type DashboardSection =
   | "owlSight"
   | "wing"
   | "hawkEye"
+  | "eagleEye"
   | "news"
   | "support"
   | "profile"

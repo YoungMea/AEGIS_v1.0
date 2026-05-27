@@ -56,6 +56,7 @@ export interface Translation {
     owlSight: string;
     wing: string;
     hawkEye: string;
+    eagleEye: string;
   };
   profile: {
     operative: string;
@@ -180,6 +181,48 @@ export interface Translation {
     openProfile: string;
     scanFailed: string;
     tip: string;
+  };
+  eagleEye: {
+    badge: string;
+    titlePart1: string;
+    titlePart2: string;
+    subtitle: string;
+    statMatches: string;
+    statArchive: string;
+    statLinks: string;
+    modeUsername: string;
+    modeEmail: string;
+    modePhone: string;
+    placeholderUsername: string;
+    placeholderEmail: string;
+    placeholderPhone: string;
+    runScan: string;
+    scanning: string;
+    saveToDossier: string;
+    statusLive: string;
+    statusComplete: string;
+    statusReady: string;
+    aiTitle: string;
+    aiUnavailable: string;
+    confidence: string;
+    via: string;
+    private: string;
+    posts: string;
+    followers: string;
+    following: string;
+    openProfile: string;
+    probeTitle: string;
+    archiveTitle: string;
+    archiveEmpty: string;
+    bundleTitle: string;
+    bundleEmpty: string;
+    linkCount: string;
+    imageCount: string;
+    pickDossier: string;
+    noDossiers: string;
+    appendOk: string;
+    appendError: string;
+    appendSummary: string;
   };
   activity: {
     badge: string;

@@ -20,6 +20,7 @@ import {
   ScanLine,
   Map,
   Crosshair,
+  Eye,
 } from "lucide-react";
 import { Logo } from "@/components/ui/Logo";
 import { StatusBar } from "@/components/ui/StatusBar";
@@ -44,6 +45,7 @@ import { ActivitySection } from "./sections/ActivitySection";
 import { ImageIntelSection } from "./sections/ImageIntelSection";
 import { WingSection } from "./sections/WingSection";
 import { HawkEyeSection } from "./sections/HawkEyeSection";
+import { EagleEyeSection } from "./sections/EagleEyeSection";
 import { ChangePasswordModal } from "./modals/ChangePasswordModal";
 import { DossierViewModal } from "./modals/DossierViewModal";
 import { NotificationsModal } from "./modals/NotificationsModal";
@@ -301,6 +303,18 @@ function DashboardInner({ user, initialDossiers }: Props) {
             </motion.div>
           )}
 
+          {section === "eagleEye" && (
+            <motion.div
+              key="eagleEye"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.25 }}
+            >
+              <EagleEyeSection />
+            </motion.div>
+          )}
+
           {section === "news" && (
             <motion.div
               key="news"
@@ -462,6 +476,13 @@ function TopBar({
       icon: <Crosshair size={14} />,
       accent: "amber",
       accentLabel: "OSINT",
+    },
+    {
+      id: "eagleEye",
+      label: t.nav.eagleEye,
+      icon: <Eye size={14} />,
+      accent: "amber",
+      accentLabel: "DEEP",
     },
     { id: "news", label: t.nav.news, icon: <Newspaper size={14} /> },
     { id: "support", label: t.nav.support, icon: <Headphones size={14} /> },
