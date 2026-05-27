@@ -15,6 +15,7 @@ export type DashboardSection =
   | "chat"
   | "owlSight"
   | "wing"
+  | "hawkEye"
   | "news"
   | "support"
   | "profile"

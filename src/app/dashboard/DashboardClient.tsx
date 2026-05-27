@@ -19,6 +19,7 @@ import {
   Bell,
   ScanLine,
   Map,
+  Crosshair,
 } from "lucide-react";
 import { Logo } from "@/components/ui/Logo";
 import { StatusBar } from "@/components/ui/StatusBar";
@@ -42,6 +43,7 @@ import { ProfileSection } from "./sections/ProfileSection";
 import { ActivitySection } from "./sections/ActivitySection";
 import { ImageIntelSection } from "./sections/ImageIntelSection";
 import { WingSection } from "./sections/WingSection";
+import { HawkEyeSection } from "./sections/HawkEyeSection";
 import { ChangePasswordModal } from "./modals/ChangePasswordModal";
 import { DossierViewModal } from "./modals/DossierViewModal";
 import { NotificationsModal } from "./modals/NotificationsModal";
@@ -287,6 +289,18 @@ function DashboardInner({ user, initialDossiers }: Props) {
             </motion.div>
           )}
 
+          {section === "hawkEye" && (
+            <motion.div
+              key="hawkEye"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.25 }}
+            >
+              <HawkEyeSection />
+            </motion.div>
+          )}
+
           {section === "news" && (
             <motion.div
               key="news"
@@ -441,6 +455,13 @@ function TopBar({
       icon: <Map size={14} />,
       accent: "amber",
       accentLabel: "GEO",
+    },
+    {
+      id: "hawkEye",
+      label: t.nav.hawkEye,
+      icon: <Crosshair size={14} />,
+      accent: "amber",
+      accentLabel: "OSINT",
     },
     { id: "news", label: t.nav.news, icon: <Newspaper size={14} /> },
     { id: "support", label: t.nav.support, icon: <Headphones size={14} /> },
