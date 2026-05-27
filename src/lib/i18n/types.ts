@@ -161,8 +161,10 @@ export interface Translation {
     statMissing: string;
     modeUsername: string;
     modeEmail: string;
+    modePhone: string;
     placeholderUsername: string;
     placeholderEmail: string;
+    placeholderPhone: string;
     runScan: string;
     scanning: string;
     statusLive: string;

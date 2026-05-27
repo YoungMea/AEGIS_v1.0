@@ -10,8 +10,10 @@
 import type { NextRequest } from "next/server";
 import {
   EMAIL_PLATFORMS,
+  PHONE_PLATFORMS,
   USERNAME_PLATFORMS,
   normaliseEmail,
+  normalisePhone,
   normaliseUsername,
   probe,
   type HawkEyePlatform,
@@ -36,11 +38,21 @@ export async function GET(req: NextRequest) {
   }
 
   const { searchParams } = new URL(req.url);
-  const mode = searchParams.get("mode") === "email" ? "email" : "username";
+  const modeParam = searchParams.get("mode");
+  const mode =
+    modeParam === "email"
+      ? "email"
+      : modeParam === "phone"
+        ? "phone"
+        : "username";
   const raw = searchParams.get("q") ?? "";
 
   const query =
-    mode === "email" ? normaliseEmail(raw) : normaliseUsername(raw);
+    mode === "email"
+      ? normaliseEmail(raw)
+      : mode === "phone"
+        ? normalisePhone(raw)
+        : normaliseUsername(raw);
   if (!query) {
     return new Response("Invalid query", { status: 400 });
   }
@@ -58,7 +70,11 @@ export async function GET(req: NextRequest) {
   }
 
   const platforms: HawkEyePlatform[] =
-    mode === "email" ? EMAIL_PLATFORMS : USERNAME_PLATFORMS;
+    mode === "email"
+      ? EMAIL_PLATFORMS
+      : mode === "phone"
+        ? PHONE_PLATFORMS
+        : USERNAME_PLATFORMS;
 
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {

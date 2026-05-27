@@ -35,18 +35,29 @@ export type HawkEyePlatform =
   | "tiktok"
   | "instagram"
   | "snapchat"
-  | "gravatar";
+  | "blink"
+  | "gravatar"
+  | "whatsapp"
+  | "telegramPhone"
+  | "blinkPhone";
 
-export type HawkEyeMode = "username" | "email";
+export type HawkEyeMode = "username" | "email" | "phone";
 
 export const USERNAME_PLATFORMS: HawkEyePlatform[] = [
   "telegram",
   "tiktok",
   "instagram",
   "snapchat",
+  "blink",
 ];
 
 export const EMAIL_PLATFORMS: HawkEyePlatform[] = ["gravatar"];
+
+export const PHONE_PLATFORMS: HawkEyePlatform[] = [
+  "whatsapp",
+  "telegramPhone",
+  "blinkPhone",
+];
 
 /* ----------------------------------------------------------- helpers */
 
@@ -205,6 +216,144 @@ async function probeSnapchat(handle: string): Promise<ProbeResult> {
 }
 
 /**
+ * Blink (blinkmap.com) — friends-on-a-map social. The site ships a Nuxt
+ * front-end at /en/u/<handle>. Profiles that exist render normally; the
+ * Nuxt 404 handler bounces unknown handles to /__nuxt_error with a
+ * 4xx status. We treat any non-4xx + reasonable HTML size as "found".
+ *
+ * Blink's user directory is mostly in-app, so this is intentionally a
+ * best-effort probe — false negatives are preferred over false positives.
+ */
+async function probeBlink(handle: string): Promise<ProbeResult> {
+  const start = Date.now();
+  const url = `https://blinkmap.com/en/u/${encodeURIComponent(handle)}`;
+  const res = await timedFetch(url, { redirect: "manual" } as RequestInit);
+  if (!res) return base("blink", "error", url, "Network timeout", start);
+
+  // Manual redirect: Nuxt 404 sends a 302 to /__nuxt_error.
+  if (res.status >= 300 && res.status < 400) {
+    const loc = res.headers.get("location") ?? "";
+    if (loc.includes("__nuxt_error") || loc.includes("statusCode=404")) {
+      return base("blink", "not-found", url, "Profile not found", start);
+    }
+  }
+  if (res.status === 404) {
+    return base("blink", "not-found", url, "404", start);
+  }
+  if (!res.ok) {
+    return base("blink", "unclear", url, `HTTP ${res.status}`, start);
+  }
+  // 200 path: read body and look for profile markers vs error markers.
+  const html = await res.text();
+  if (
+    html.includes("__nuxt_error") ||
+    html.includes("Page not found") ||
+    html.includes("statusCode=404")
+  ) {
+    return base("blink", "not-found", url, "Profile not found", start);
+  }
+  const ogTitle = extract(html, /<meta property="og:title" content="([^"]+)"/);
+  return base("blink", "found", url, ogTitle ?? `@${handle} on Blink`, start);
+}
+
+/* ---------------------------- phone mode probes */
+
+/**
+ * WhatsApp click-to-chat (wa.me/<phone>).
+ * Valid international numbers redirect to api.whatsapp.com/send/?phone=...
+ * which serves a 200 share page. Invalid formats render an "Invalid phone
+ * number" page. The probe cannot confirm whether the number is *registered*
+ * — only WhatsApp itself can. We therefore surface "unclear" with a hint.
+ */
+async function probeWhatsapp(phone: string): Promise<ProbeResult> {
+  const start = Date.now();
+  const digits = phone.replace(/\D/g, "");
+  const url = `https://wa.me/${digits}`;
+  const res = await timedFetch(url);
+  if (!res) return base("whatsapp", "error", url, "Network timeout", start);
+  if (!res.ok)
+    return base("whatsapp", "error", url, `HTTP ${res.status}`, start);
+  const html = await res.text();
+  if (
+    html.includes("Phone number shared via url is invalid") ||
+    html.includes("invalid_phone_number")
+  ) {
+    return base("whatsapp", "not-found", url, "Invalid number", start);
+  }
+  if (html.includes("Share on WhatsApp") || html.includes("type=phone_number")) {
+    // Click-to-chat link is reachable. We can't confirm WA registration
+    // without scanning a QR — but a valid deep-link is still useful intel.
+    return base(
+      "whatsapp",
+      "unclear",
+      url,
+      "Deep-link valid · open in WhatsApp to confirm",
+      start,
+    );
+  }
+  return base("whatsapp", "unclear", url, "Ambiguous response", start);
+}
+
+/**
+ * Telegram phone lookup (t.me/+<phone>).
+ * Telegram returns a generic "Join group chat on Telegram" og:title for
+ * any well-formed +phone link, regardless of registration. We surface
+ * the deep-link as "unclear" so an analyst can open it in Telegram to
+ * confirm whether the number resolves to a real account.
+ */
+async function probeTelegramPhone(phone: string): Promise<ProbeResult> {
+  const start = Date.now();
+  const digits = phone.replace(/\D/g, "");
+  const url = `https://t.me/+${digits}`;
+  const res = await timedFetch(url);
+  if (!res)
+    return base("telegramPhone", "error", url, "Network timeout", start);
+  if (res.status === 404)
+    return base("telegramPhone", "not-found", url, "404", start);
+  const html = await res.text();
+  if (
+    html.includes("Phone number is invalid") ||
+    html.includes("phone_number_invalid")
+  ) {
+    return base("telegramPhone", "not-found", url, "Invalid number", start);
+  }
+  if (
+    html.includes("tgme_page_title") ||
+    html.includes("If you have Telegram") ||
+    html.includes("Join group chat on Telegram")
+  ) {
+    return base(
+      "telegramPhone",
+      "unclear",
+      url,
+      "Deep-link valid · open in Telegram to confirm",
+      start,
+    );
+  }
+  return base("telegramPhone", "unclear", url, "Ambiguous response", start);
+}
+
+/**
+ * Blink does not expose a public phone-lookup endpoint — the directory
+ * is in-app only. We still surface a manual deep-link to the Blink site
+ * so the analyst can run an in-app contact search on this number.
+ */
+async function probeBlinkPhone(phone: string): Promise<ProbeResult> {
+  const start = Date.now();
+  const digits = phone.replace(/\D/g, "");
+  // Best public landing for the analyst — Blink resolves contacts in-app
+  // via the friends panel.
+  const url = `https://blinkmap.com/en?invite=${digits}`;
+  return base(
+    "blinkPhone",
+    "unclear",
+    url,
+    "App-only directory · open Blink and search contacts to confirm",
+    Date.now() - 1 < start ? start : Date.now(),
+  );
+}
+
+/**
  * Gravatar exposes a JSON profile keyed by lowercase MD5 of the email.
  * 200 = profile exists, 404 = no Gravatar bound.
  */
@@ -267,8 +416,16 @@ export async function probe(
       return probeInstagram(query);
     case "snapchat":
       return probeSnapchat(query);
+    case "blink":
+      return probeBlink(query);
     case "gravatar":
       return probeGravatar(query);
+    case "whatsapp":
+      return probeWhatsapp(query);
+    case "telegramPhone":
+      return probeTelegramPhone(query);
+    case "blinkPhone":
+      return probeBlinkPhone(query);
   }
 }
 
@@ -288,4 +445,16 @@ export function normaliseEmail(raw: string): string | null {
   const trimmed = raw.trim().toLowerCase();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(trimmed)) return null;
   return trimmed;
+}
+
+/**
+ * Phone normalisation — strips spaces, dashes, parentheses and a leading
+ * "+", then validates the remaining digits as an E.164-style international
+ * number. Accepts 7-15 digits, with the country code prefix present.
+ */
+export function normalisePhone(raw: string): string | null {
+  const cleaned = raw.replace(/[^\d+]/g, "");
+  const digits = cleaned.replace(/^\+/, "").replace(/\D/g, "");
+  if (digits.length < 7 || digits.length > 15) return null;
+  return digits;
 }

@@ -11,12 +11,13 @@ import {
   ExternalLink,
   Mail,
   AtSign,
+  Phone,
   ShieldOff,
 } from "lucide-react";
 import { useI18n } from "@/components/i18n/I18nProvider";
 import { cn } from "@/lib/utils";
 
-type Mode = "username" | "email";
+type Mode = "username" | "email" | "phone";
 type ProbeStatus = "idle" | "pending" | "found" | "not-found" | "unclear" | "error";
 
 interface PlatformResult {
@@ -56,16 +57,41 @@ const PLATFORM_META: Record<
     icon: "👻",
     subtitle: "snapchat.com/add/<handle>",
   },
+  blink: {
+    label: "Blink",
+    tone: "from-fuchsia-500/30 to-violet-500/5 border-fuchsia-400/30",
+    icon: "★",
+    subtitle: "blinkmap.com/u/<handle>",
+  },
   gravatar: {
     label: "Gravatar",
     tone: "from-emerald-500/30 to-emerald-500/5 border-emerald-400/30",
     icon: "✉",
     subtitle: "gravatar.com/<md5>",
   },
+  whatsapp: {
+    label: "WhatsApp",
+    tone: "from-emerald-500/30 to-emerald-500/5 border-emerald-400/30",
+    icon: "✆",
+    subtitle: "wa.me/<phone>",
+  },
+  telegramPhone: {
+    label: "Telegram",
+    tone: "from-sky-500/30 to-sky-500/5 border-sky-400/30",
+    icon: "✈",
+    subtitle: "t.me/+<phone>",
+  },
+  blinkPhone: {
+    label: "Blink",
+    tone: "from-fuchsia-500/30 to-violet-500/5 border-fuchsia-400/30",
+    icon: "★",
+    subtitle: "blinkmap.com (in-app contacts)",
+  },
 };
 
-const USERNAME_LIST = ["telegram", "tiktok", "instagram", "snapchat"];
+const USERNAME_LIST = ["telegram", "tiktok", "instagram", "snapchat", "blink"];
 const EMAIL_LIST = ["gravatar"];
+const PHONE_LIST = ["whatsapp", "telegramPhone", "blinkPhone"];
 
 export function HawkEyeSection() {
   const { t } = useI18n();
@@ -77,7 +103,11 @@ export function HawkEyeSection() {
   const [startedAt, setStartedAt] = useState<number | null>(null);
   const evtRef = useRef<EventSource | null>(null);
 
-  const platforms = mode === "email" ? EMAIL_LIST : USERNAME_LIST;
+  const platforms = useMemo(() => {
+    if (mode === "email") return EMAIL_LIST;
+    if (mode === "phone") return PHONE_LIST;
+    return USERNAME_LIST;
+  }, [mode]);
 
   const close = useCallback(() => {
     if (evtRef.current) {
@@ -92,7 +122,11 @@ export function HawkEyeSection() {
 
   const startScan = useCallback(() => {
     setError(null);
-    const trimmed = query.trim().replace(/^@+/, "");
+    let trimmed = query.trim().replace(/^@+/, "");
+    // Phone mode: keep digits and a leading +.
+    if (mode === "phone") {
+      trimmed = query.trim();
+    }
     if (!trimmed) return;
 
     close();
@@ -227,10 +261,16 @@ export function HawkEyeSection() {
             icon={<Mail size={12} />}
             label={t.hawkeye?.modeEmail ?? "Email"}
           />
+          <ModeBtn
+            active={mode === "phone"}
+            onClick={() => setMode("phone")}
+            icon={<Phone size={12} />}
+            label={t.hawkeye?.modePhone ?? "Phone"}
+          />
         </div>
         <div className="relative flex-1">
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40 font-mono text-[12px]">
-            {mode === "username" ? "@" : ""}
+            {mode === "username" ? "@" : mode === "phone" ? "+" : ""}
           </span>
           <input
             value={query}
@@ -241,14 +281,17 @@ export function HawkEyeSection() {
             placeholder={
               mode === "username"
                 ? t.hawkeye?.placeholderUsername ?? "agent_codename"
-                : t.hawkeye?.placeholderEmail ?? "target@domain.com"
+                : mode === "phone"
+                  ? t.hawkeye?.placeholderPhone ?? "998901234567"
+                  : t.hawkeye?.placeholderEmail ?? "target@domain.com"
             }
             className={cn(
               "w-full h-10 bg-ink-300/60 border border-white/[0.06] rounded-md font-mono text-[13px] text-white placeholder-white/30 focus:outline-none focus:border-amber-glow/50",
-              mode === "username" ? "pl-7 pr-3" : "px-3",
+              mode === "username" || mode === "phone" ? "pl-7 pr-3" : "px-3",
             )}
             spellCheck={false}
             autoComplete="off"
+            inputMode={mode === "phone" ? "tel" : "text"}
           />
         </div>
         <button
