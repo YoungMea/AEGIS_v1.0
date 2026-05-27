@@ -132,9 +132,19 @@ async function waybackSnapshots(
   cdx.searchParams.set("limit", `-${limit}`);     // last N
 
   const res = await timed(cdx.toString());
-  if (!res || !res.ok) return [];
+  if (!res || !res.ok) {
+    if (res) {
+      // eslint-disable-next-line no-console
+      console.warn(
+        `[eagleEye:wayback] ${source} ${res.status}: ${(await res.text()).slice(0, 120)}`,
+      );
+    }
+    return [];
+  }
   try {
-    const rows = (await res.json()) as string[][];
+    const text = await res.text();
+    if (!text.trim()) return [];
+    const rows = JSON.parse(text) as string[][];
     if (!rows.length) return [];
     // First row is the header; skip it.
     return rows.slice(1).map((r) => {
@@ -146,7 +156,11 @@ async function waybackSnapshots(
         date: timestampToIso(timestamp ?? ""),
       };
     });
-  } catch {
+  } catch (e) {
+    // eslint-disable-next-line no-console
+    console.warn(
+      `[eagleEye:wayback] ${source} parse error: ${(e as Error).message}`,
+    );
     return [];
   }
 }
@@ -163,29 +177,43 @@ function timestampToIso(ts: string): string {
 
 /**
  * Resolve a list of archived snapshots given the active mode/query.
- * For username we hit each platform's profile URL; for email/phone we
- * skip — the archive doesn't index those anyway.
+ * Hits Wayback sequentially (parallel calls occasionally trip CDX rate
+ * limiting and return Connection Reset). Each platform request waits ~250ms
+ * before the next one, which keeps the entire archive step under 3 seconds
+ * but stays well below Wayback's per-IP throttle.
  */
 async function collectArchive(
   mode: EagleEyeMode,
   query: string,
 ): Promise<ArchiveSnapshot[]> {
-  if (mode !== "username") {
+  // For email mode we can still archive the email's localpart against
+  // social URLs — most people keep the same handle across the email and
+  // social account.
+  let handle = query;
+  if (mode === "email") {
+    handle = query.split("@")[0] ?? query;
+  } else if (mode === "phone") {
+    // Phone numbers don't index in Wayback for these social URLs.
     return [];
   }
+  if (!handle) return [];
+
   const targets = [
-    { url: `instagram.com/${query}/`, source: "Instagram" },
-    { url: `tiktok.com/@${query}`, source: "TikTok" },
-    { url: `t.me/${query}`, source: "Telegram" },
-    { url: `twitter.com/${query}`, source: "Twitter / X" },
-    { url: `github.com/${query}`, source: "GitHub" },
+    { url: `instagram.com/${handle}/`, source: "Instagram" },
+    { url: `tiktok.com/@${handle}`, source: "TikTok" },
+    { url: `t.me/${handle}`, source: "Telegram" },
+    { url: `twitter.com/${handle}`, source: "Twitter / X" },
+    { url: `github.com/${handle}`, source: "GitHub" },
   ];
 
-  const all = await Promise.all(
-    targets.map((t) => waybackSnapshots(t.url, t.source, 5)),
-  );
+  const all: ArchiveSnapshot[] = [];
+  for (const tgt of targets) {
+    const snaps = await waybackSnapshots(tgt.url, tgt.source, 5);
+    all.push(...snaps);
+    // Polite pacing — Wayback CDX rate-limits aggressive parallel callers.
+    await new Promise((r) => setTimeout(r, 250));
+  }
   return all
-    .flat()
     .sort((a, b) => (a.timestamp < b.timestamp ? 1 : -1))
     .slice(0, 20);
 }
@@ -322,8 +350,21 @@ async function summariseWithAi(
 ): Promise<AiSummary | null> {
   const orKey = (process.env.OPENROUTER_API_KEY ?? "").trim();
   const geminiKey = (process.env.GEMINI_API_KEY ?? "").trim();
-  if (!orKey && !geminiKey) return null;
-  const primary = (process.env.AEGIS_AI_PRIMARY ?? "gemini").toLowerCase();
+  if (!orKey && !geminiKey) {
+    // eslint-disable-next-line no-console
+    console.warn("[eagleEye:ai] no provider configured");
+    return null;
+  }
+  // Default: prefer Gemini when both are set, but fall through to whichever
+  // single provider the operator actually configured. The operator can
+  // force the order with AEGIS_AI_PRIMARY=openrouter.
+  const explicit = (process.env.AEGIS_AI_PRIMARY ?? "").toLowerCase();
+  const primary =
+    explicit === "openrouter" || explicit === "gemini"
+      ? explicit
+      : geminiKey
+        ? "gemini"
+        : "openrouter";
 
   const tryGemini = () =>
     geminiKey ? callGemini(payload, geminiKey) : Promise.resolve(null);
@@ -331,9 +372,17 @@ async function summariseWithAi(
     orKey ? callOpenRouter(payload, orKey) : Promise.resolve(null);
 
   if (primary === "openrouter") {
-    return (await tryOpenRouter()) ?? (await tryGemini());
+    const r = await tryOpenRouter();
+    if (r) return r;
+    // eslint-disable-next-line no-console
+    if (geminiKey) console.warn("[eagleEye:ai] OpenRouter empty, trying Gemini");
+    return tryGemini();
   }
-  return (await tryGemini()) ?? (await tryOpenRouter());
+  const r = await tryGemini();
+  if (r) return r;
+  // eslint-disable-next-line no-console
+  if (orKey) console.warn("[eagleEye:ai] Gemini empty, trying OpenRouter");
+  return tryOpenRouter();
 }
 
 async function callGemini(
@@ -364,11 +413,26 @@ async function callGemini(
       }),
       signal: ac.signal,
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      // eslint-disable-next-line no-console
+      console.warn(
+        `[eagleEye:gemini] ${model} ${res.status}: ${(await res.text()).slice(0, 200)}`,
+      );
+      return null;
+    }
     const json = (await res.json()) as GeminiTextResponse;
     const txt = json.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+    if (!txt) {
+      // eslint-disable-next-line no-console
+      console.warn("[eagleEye:gemini] empty response");
+      return null;
+    }
     return parseAi(txt, "gemini");
-  } catch {
+  } catch (e) {
+    // eslint-disable-next-line no-console
+    console.warn(
+      `[eagleEye:gemini] fetch error: ${(e as Error).message}`,
+    );
     return null;
   } finally {
     clearTimeout(t);
@@ -379,10 +443,11 @@ async function callOpenRouter(
   payload: object,
   apiKey: string,
 ): Promise<AiSummary | null> {
+  // Free vision-capable model is overkill for text. Default to a
+  // text-only free model that's better at JSON; allow override via env.
   const model = (
     process.env.OPENROUTER_TEXT_MODEL ??
-    process.env.OPENROUTER_VISION_MODEL ??
-    "google/gemma-4-31b-it:free"
+    "google/gemma-2-9b-it:free"
   ).trim();
   const ac = new AbortController();
   const t = setTimeout(() => ac.abort(), 45_000);
@@ -404,6 +469,11 @@ async function callOpenRouter(
           max_tokens: 800,
           messages: [
             {
+              role: "system",
+              content:
+                "You output strict JSON only. No prose, no markdown fences.",
+            },
+            {
               role: "user",
               content: `${NARRATIVE_PROMPT}\n\nINPUT:\n${JSON.stringify(payload)}`,
             },
@@ -412,11 +482,38 @@ async function callOpenRouter(
         signal: ac.signal,
       },
     );
-    if (!res.ok) return null;
+    if (!res.ok) {
+      // eslint-disable-next-line no-console
+      console.warn(
+        `[eagleEye:openrouter] ${model} ${res.status}: ${(await res.text()).slice(0, 200)}`,
+      );
+      return null;
+    }
     const json = (await res.json()) as OpenAiTextResponse;
+    if (json.error?.message) {
+      // eslint-disable-next-line no-console
+      console.warn(`[eagleEye:openrouter] ${json.error.message}`);
+      return null;
+    }
     const txt = json.choices?.[0]?.message?.content ?? "";
-    return parseAi(txt, "openrouter");
-  } catch {
+    if (!txt) {
+      // eslint-disable-next-line no-console
+      console.warn("[eagleEye:openrouter] empty response");
+      return null;
+    }
+    const parsed = parseAi(txt, "openrouter");
+    if (!parsed) {
+      // eslint-disable-next-line no-console
+      console.warn(
+        `[eagleEye:openrouter] parse failed: ${txt.slice(0, 200)}`,
+      );
+    }
+    return parsed;
+  } catch (e) {
+    // eslint-disable-next-line no-console
+    console.warn(
+      `[eagleEye:openrouter] fetch error: ${(e as Error).message}`,
+    );
     return null;
   } finally {
     clearTimeout(t);

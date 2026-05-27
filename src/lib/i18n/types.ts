@@ -56,7 +56,6 @@ export interface Translation {
     owlSight: string;
     wing: string;
     hawkEye: string;
-    eagleEye: string;
   };
   profile: {
     operative: string;
@@ -152,37 +151,7 @@ export interface Translation {
     openInOsm: string;
     legendLabel: string;
   };
-  hawkeye: {
-    badge: string;
-    titlePart1: string;
-    titlePart2: string;
-    subtitle: string;
-    statTargets: string;
-    statFound: string;
-    statMissing: string;
-    modeUsername: string;
-    modeEmail: string;
-    modePhone: string;
-    placeholderUsername: string;
-    placeholderEmail: string;
-    placeholderPhone: string;
-    runScan: string;
-    scanning: string;
-    statusLive: string;
-    statusComplete: string;
-    statusReady: string;
-    statusFound: string;
-    statusNotFound: string;
-    statusUnclear: string;
-    statusError: string;
-    statusPending: string;
-    statusIdle: string;
-    cardIdle: string;
-    openProfile: string;
-    scanFailed: string;
-    tip: string;
-  };
-  eagleEye: {
+  hawkEye: {
     badge: string;
     titlePart1: string;
     titlePart2: string;

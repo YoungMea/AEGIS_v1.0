@@ -113,7 +113,7 @@ export async function POST(req: NextRequest) {
   let additionalEvidence = dossier.additionalEvidence ?? "";
   if (body.summary && typeof body.summary === "string") {
     const stamp = new Date().toISOString().slice(0, 16).replace("T", " ");
-    const block = `\n\n— EagleEye · ${stamp} —\n${body.summary.trim()}`;
+    const block = `\n\n— HawkEye · ${stamp} —\n${body.summary.trim()}`;
     additionalEvidence = (additionalEvidence + block).slice(0, 8000);
   }
 

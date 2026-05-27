@@ -1,51 +1,50 @@
 /**
- * GET /api/hawkeye/scan?mode=username&q=...
- * GET /api/hawkeye/scan?mode=email&q=...
+ * POST /api/eagleeye/scan
+ * Body: { mode: "username" | "email" | "phone", q: string }
  *
- * Streams probe results back over Server-Sent Events. Each event payload
- * is a single ProbeResult JSON object. Probes run in parallel — clients
- * see results trickle in as each platform responds, so the UI feels
- * tactical and live rather than blocking on the slowest target.
+ * Runs the full EagleEye pipeline (HawkEye fan-out + Wayback archive +
+ * Instagram metadata + Gemini summary) in one server round-trip and
+ * returns the full report.
  */
 import type { NextRequest } from "next/server";
+import { jsonError, jsonOk, safeJson } from "@/lib/api";
+import { requireUser } from "@/lib/auth";
+import { rateLimit } from "@/lib/rate-limit";
 import {
-  EMAIL_PLATFORMS,
-  PHONE_PLATFORMS,
-  USERNAME_PLATFORMS,
   normaliseEmail,
   normalisePhone,
   normaliseUsername,
-  probe,
-  type HawkEyePlatform,
-  type ProbeResult,
 } from "@/lib/hawkEye";
-import { rateLimit } from "@/lib/rate-limit";
-import { requireUser } from "@/lib/auth";
+import { runEagleEye, type EagleEyeMode } from "@/lib/eagleEye";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+// Allow EagleEye to run beyond the default 10s — the AI summary alone
+// can take 20–40s on the OpenRouter free tier.
+export const maxDuration = 60;
 
-function sseLine(name: string, data: unknown): string {
-  return `event: ${name}\ndata: ${JSON.stringify(data)}\n\n`;
+interface Body {
+  mode?: string;
+  q?: string;
+  skipAi?: boolean;
 }
 
-export async function GET(req: NextRequest) {
+export async function POST(req: NextRequest) {
   let user;
   try {
     user = await requireUser(req);
   } catch {
-    return new Response("Unauthorized", { status: 401 });
+    return jsonError("Unauthorized", 401);
   }
 
-  const { searchParams } = new URL(req.url);
-  const modeParam = searchParams.get("mode");
-  const mode =
-    modeParam === "email"
+  const body = (await safeJson<Body>(req)) ?? {};
+  const mode: EagleEyeMode =
+    body.mode === "email"
       ? "email"
-      : modeParam === "phone"
+      : body.mode === "phone"
         ? "phone"
         : "username";
-  const raw = searchParams.get("q") ?? "";
+  const raw = (body.q ?? "").trim();
 
   const query =
     mode === "email"
@@ -53,101 +52,29 @@ export async function GET(req: NextRequest) {
       : mode === "phone"
         ? normalisePhone(raw)
         : normaliseUsername(raw);
+
   if (!query) {
-    return new Response("Invalid query", { status: 400 });
+    return jsonError("Invalid query", 400);
   }
 
-  // 6 scans/min/user — generous for normal use, blocks runaway loops.
+  // EagleEye is heavier than a HawkEye scan (Wayback + IG fetch + AI), so
+  // we cap it tighter — 4/min is enough for analyst-driven use.
   if (
     !rateLimit({
       bucket: "hawkeye:scan:user",
       key: user.id,
-      limit: 6,
+      limit: 4,
       windowSec: 60,
     }).allowed
   ) {
-    return new Response("Slow down", { status: 429 });
+    return jsonError("Slow down", 429);
   }
 
-  // Build the platform list and per-platform query. In email mode we run
-  // Gravatar against the full email *and* probe each social platform with
-  // the email's localpart as a candidate handle — most people pick the
-  // same string for both.
-  let platforms: HawkEyePlatform[];
-  let queryFor: (p: HawkEyePlatform) => string;
-
-  if (mode === "email") {
-    platforms = [...EMAIL_PLATFORMS, ...USERNAME_PLATFORMS.filter((p) => p !== "github")];
-    const local = query.split("@")[0] ?? query;
-    queryFor = (p) =>
-      p === "gravatar" || p === "github" ? query : local;
-  } else if (mode === "phone") {
-    platforms = PHONE_PLATFORMS;
-    queryFor = () => query;
-  } else {
-    platforms = USERNAME_PLATFORMS;
-    queryFor = () => query;
-  }
-
-  const stream = new ReadableStream<Uint8Array>({
-    async start(controller) {
-      const enc = new TextEncoder();
-      let closed = false;
-      const send = (event: string, data: unknown) => {
-        if (closed) return;
-        try {
-          controller.enqueue(enc.encode(sseLine(event, data)));
-        } catch {
-          /* ignore */
-        }
-      };
-
-      // Open envelope so the client knows what to expect.
-      send("start", {
-        mode,
-        query,
-        platforms,
-        startedAt: Date.now(),
-      });
-
-      // Fan probes out in parallel; emit each one as it resolves.
-      await Promise.all(
-        platforms.map(async (p) => {
-          send("pending", { platform: p });
-          let result: ProbeResult;
-          try {
-            result = await probe(p, queryFor(p));
-          } catch (e) {
-            result = {
-              platform: p,
-              status: "error",
-              url: null,
-              display: null,
-              detail: e instanceof Error ? e.message : "Unknown error",
-              durationMs: 0,
-            };
-          }
-          send("result", result);
-        }),
-      );
-
-      send("done", { finishedAt: Date.now() });
-      closed = true;
-      try {
-        controller.close();
-      } catch {
-        /* ignore */
-      }
-    },
+  const report = await runEagleEye({
+    mode,
+    query,
+    skipAi: !!body.skipAi,
   });
 
-  return new Response(stream, {
-    status: 200,
-    headers: {
-      "Content-Type": "text/event-stream; charset=utf-8",
-      "Cache-Control": "no-cache, no-transform",
-      Connection: "keep-alive",
-      "X-Accel-Buffering": "no",
-    },
-  });
+  return jsonOk({ report });
 }

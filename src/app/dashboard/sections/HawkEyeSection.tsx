@@ -1,312 +1,240 @@
 "use client";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Crosshair,
+  Eye,
   Search,
   Loader2,
   CheckCircle2,
-  XCircle,
-  AlertCircle,
-  ExternalLink,
-  Mail,
   AtSign,
+  Mail,
   Phone,
-  ShieldOff,
+  History,
+  Sparkles,
+  ExternalLink,
+  Link2,
+  ImageIcon,
+  Save,
+  ShieldCheck,
+  AlertTriangle,
+  Instagram,
+  Lock,
+  BadgeCheck,
 } from "lucide-react";
 import { useI18n } from "@/components/i18n/I18nProvider";
+import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/utils";
+import type { Dossier } from "@/lib/dossier";
 
 type Mode = "username" | "email" | "phone";
-type ProbeStatus = "idle" | "pending" | "found" | "not-found" | "unclear" | "error";
 
-interface PlatformResult {
+interface ProbeResult {
   platform: string;
-  status: ProbeStatus;
+  status: "found" | "not-found" | "unclear" | "error" | "pending" | "idle";
   url: string | null;
   display: string | null;
   detail: string | null;
   durationMs: number;
 }
 
-const PLATFORM_META: Record<
-  string,
-  { label: string; tone: string; icon: string; subtitle: string }
-> = {
-  telegram: {
-    label: "Telegram",
-    tone: "from-sky-500/30 to-sky-500/5 border-sky-400/30",
-    icon: "✈",
-    subtitle: "t.me/<handle>",
-  },
-  tiktok: {
-    label: "TikTok",
-    tone: "from-pink-500/30 to-pink-500/5 border-pink-400/30",
-    icon: "♪",
-    subtitle: "tiktok.com/@<handle>",
-  },
-  instagram: {
-    label: "Instagram",
-    tone: "from-amber-500/30 to-fuchsia-500/5 border-amber-400/30",
-    icon: "◎",
-    subtitle: "instagram.com/<handle>",
-  },
-  snapchat: {
-    label: "Snapchat",
-    tone: "from-yellow-400/40 to-yellow-400/5 border-yellow-300/40",
-    icon: "👻",
-    subtitle: "snapchat.com/add/<handle>",
-  },
-  blink: {
-    label: "Blink",
-    tone: "from-fuchsia-500/30 to-violet-500/5 border-fuchsia-400/30",
-    icon: "★",
-    subtitle: "blinkmap.com/u/<handle>",
-  },
-  gravatar: {
-    label: "Gravatar",
-    tone: "from-emerald-500/30 to-emerald-500/5 border-emerald-400/30",
-    icon: "✉",
-    subtitle: "gravatar.com/<md5>",
-  },
-  whatsapp: {
-    label: "WhatsApp",
-    tone: "from-emerald-500/30 to-emerald-500/5 border-emerald-400/30",
-    icon: "✆",
-    subtitle: "wa.me/<phone>",
-  },
-  telegramPhone: {
-    label: "Telegram",
-    tone: "from-sky-500/30 to-sky-500/5 border-sky-400/30",
-    icon: "✈",
-    subtitle: "t.me/+<phone>",
-  },
-  blinkPhone: {
-    label: "Blink",
-    tone: "from-fuchsia-500/30 to-violet-500/5 border-fuchsia-400/30",
-    icon: "★",
-    subtitle: "blinkmap.com (in-app contacts)",
-  },
-  viber: {
-    label: "Viber",
-    tone: "from-violet-500/30 to-violet-500/5 border-violet-400/30",
-    icon: "☏",
-    subtitle: "viber://chat?number=<phone>",
-  },
-  signal: {
-    label: "Signal",
-    tone: "from-blue-500/30 to-blue-500/5 border-blue-400/30",
-    icon: "▲",
-    subtitle: "signal.me/#p/<phone>",
-  },
-  github: {
-    label: "GitHub",
-    tone: "from-zinc-500/30 to-zinc-500/5 border-zinc-400/30",
-    icon: "⌥",
-    subtitle: "github.com/<handle>",
-  },
-};
+interface ArchiveSnapshot {
+  url: string;
+  timestamp: string;
+  source: string;
+  date: string;
+}
 
-const USERNAME_LIST = [
-  "telegram",
-  "tiktok",
-  "instagram",
-  "snapchat",
-  "blink",
-  "github",
-];
-// Email mode hits Gravatar AND GitHub directly with the email; the rest
-// of the social platforms get probed against the email's localpart.
-const EMAIL_LIST = [
-  "gravatar",
-  "github",
-  "telegram",
-  "tiktok",
-  "instagram",
-  "snapchat",
-  "blink",
-];
-const PHONE_LIST = [
-  "whatsapp",
-  "telegramPhone",
-  "viber",
-  "signal",
-  "blinkPhone",
-];
+interface InstagramMetadata {
+  handle: string;
+  url: string;
+  fullName: string | null;
+  bio: string | null;
+  avatarUrl: string | null;
+  followers: number | null;
+  following: number | null;
+  posts: number | null;
+  isPrivate: boolean | null;
+  isVerified: boolean | null;
+}
+
+interface AiSummary {
+  narrative: string;
+  confidence: number;
+  highlights: string[];
+  riskHints: string[];
+  provider: "gemini" | "openrouter" | "none";
+}
+
+interface EagleEyeReport {
+  query: string;
+  mode: Mode;
+  startedAt: number;
+  finishedAt: number;
+  hawk: ProbeResult[];
+  archive: ArchiveSnapshot[];
+  instagram: InstagramMetadata | null;
+  ai: AiSummary | null;
+  links: string[];
+  imageUrls: string[];
+}
 
 export function HawkEyeSection() {
   const { t } = useI18n();
+  const toast = useToast();
+
   const [mode, setMode] = useState<Mode>("username");
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<Record<string, PlatformResult>>({});
+  const [report, setReport] = useState<EagleEyeReport | null>(null);
   const [scanning, setScanning] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [startedAt, setStartedAt] = useState<number | null>(null);
-  const evtRef = useRef<EventSource | null>(null);
 
-  const platforms = useMemo(() => {
-    if (mode === "email") return EMAIL_LIST;
-    if (mode === "phone") return PHONE_LIST;
-    return USERNAME_LIST;
-  }, [mode]);
+  // Dossier-pick state
+  const [dossiers, setDossiers] = useState<Dossier[]>([]);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [appending, setAppending] = useState(false);
 
-  const close = useCallback(() => {
-    if (evtRef.current) {
-      try {
-        evtRef.current.close();
-      } catch {
-        /* ignore */
-      }
-      evtRef.current = null;
-    }
+  useEffect(() => {
+    // Lazy fetch the dossier list — only needed for the "Save to dossier" picker.
+    fetch("/api/dossiers")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => d?.dossiers && setDossiers(d.dossiers))
+      .catch(() => {});
   }, []);
 
-  const startScan = useCallback(() => {
-    setError(null);
-    let trimmed = query.trim().replace(/^@+/, "");
-    // Phone mode: keep digits and a leading +.
-    if (mode === "phone") {
-      trimmed = query.trim();
-    }
+  const startScan = useCallback(async () => {
+    const trimmed = query.trim().replace(/^@+/, "");
     if (!trimmed) return;
-
-    close();
-    setResults(
-      Object.fromEntries(
-        platforms.map((p) => [
-          p,
-          {
-            platform: p,
-            status: "idle" as ProbeStatus,
-            url: null,
-            display: null,
-            detail: null,
-            durationMs: 0,
-          },
-        ]),
-      ),
-    );
+    setError(null);
+    setReport(null);
     setScanning(true);
-    setStartedAt(Date.now());
-
-    const url = `/api/hawkeye/scan?mode=${mode}&q=${encodeURIComponent(trimmed)}`;
-    const es = new EventSource(url);
-    evtRef.current = es;
-
-    es.addEventListener("pending", (e) => {
-      const data = JSON.parse((e as MessageEvent).data) as { platform: string };
-      setResults((r) => ({
-        ...r,
-        [data.platform]: {
-          ...(r[data.platform] ?? {
-            platform: data.platform,
-            url: null,
-            display: null,
-            detail: null,
-            durationMs: 0,
-          }),
-          platform: data.platform,
-          status: "pending",
-          url: null,
-          display: null,
-          detail: null,
-          durationMs: 0,
-        },
-      }));
-    });
-
-    es.addEventListener("result", (e) => {
-      const data = JSON.parse((e as MessageEvent).data) as PlatformResult;
-      setResults((r) => ({
-        ...r,
-        [data.platform]: {
-          ...data,
-          status: data.status as ProbeStatus,
-        },
-      }));
-    });
-
-    es.addEventListener("done", () => {
+    try {
+      const res = await fetch("/api/hawkeye/scan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mode, q: trimmed }),
+      });
+      if (!res.ok) {
+        const txt = await res.text();
+        setError(txt || "Scan failed");
+        return;
+      }
+      const data = (await res.json()) as { report: EagleEyeReport };
+      setReport(data.report);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Network error");
+    } finally {
       setScanning(false);
-      close();
-    });
+    }
+  }, [query, mode]);
 
-    es.onerror = () => {
-      setScanning(false);
-      setError(t.hawkeye?.scanFailed ?? "Scan failed");
-      close();
-    };
-  }, [query, mode, platforms, close, t.hawkeye]);
-
-  const summary = useMemo(() => {
-    const arr = Object.values(results);
+  const stats = useMemo(() => {
+    if (!report) return { found: 0, archive: 0, links: 0 };
     return {
-      total: arr.length,
-      found: arr.filter((r) => r.status === "found").length,
-      notFound: arr.filter((r) => r.status === "not-found").length,
-      pending: arr.filter((r) => r.status === "pending").length,
+      found: report.hawk.filter((h) => h.status === "found").length,
+      archive: report.archive.length,
+      links: report.links.length,
     };
-  }, [results]);
+  }, [report]);
 
   const elapsed =
-    startedAt && !scanning
-      ? ((Date.now() - startedAt) / 1000).toFixed(1)
+    report && !scanning
+      ? ((report.finishedAt - report.startedAt) / 1000).toFixed(1)
       : null;
+
+  /* ----- Dossier append */
+
+  async function appendToDossier(dossierId: string) {
+    if (!report) return;
+    setAppending(true);
+    try {
+      const res = await fetch("/api/dossiers/append", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          dossierId,
+          links: report.links,
+          imageUrls: report.imageUrls,
+          summary: buildSummaryBlock(report),
+          tags: ["hawkeye", report.mode, report.query.slice(0, 32)],
+        }),
+      });
+      if (!res.ok) {
+        const txt = await res.text();
+        toast.push({
+          type: "error",
+          title: t.hawkEye?.appendError ?? "Could not append",
+          message: txt.slice(0, 120),
+        });
+        return;
+      }
+      const data = (await res.json()) as {
+        appended: { links: number; images: number };
+      };
+      toast.push({
+        type: "success",
+        title: t.hawkEye?.appendOk ?? "Filed to dossier",
+        message:
+          (t.hawkEye?.appendSummary ?? "Added") +
+          ` · ${data.appended.links} links · ${data.appended.images} images`,
+      });
+      setPickerOpen(false);
+    } finally {
+      setAppending(false);
+    }
+  }
+
+  /* ----- Render */
 
   return (
     <div className="pt-6 pb-12">
-      {/* ----- Header */}
+      {/* Header */}
       <div className="flex flex-wrap items-end justify-between gap-4 mb-5">
         <div>
           <div className="badge inline-flex mb-2">
-            <Crosshair size={11} /> {t.hawkeye?.badge ?? "HAWKEYE · OSINT"}
+            <Eye size={11} /> {t.hawkEye?.badge ?? "HAWKEYE · DEEP RECON"}
           </div>
           <h1 className="font-display tracking-[0.16em] uppercase text-2xl sm:text-3xl text-white">
-            {t.hawkeye?.titlePart1 ?? "Hawk"}
+            {t.hawkEye?.titlePart1 ?? "Hawk"}
             <span className="text-amber-glow text-glow">
-              {t.hawkeye?.titlePart2 ?? "Eye"}
+              {t.hawkEye?.titlePart2 ?? "Eye"}
             </span>
           </h1>
           <p className="text-white/45 text-xs mt-1.5 max-w-md">
-            {t.hawkeye?.subtitle ??
-              "Hunt usernames and emails across Telegram, TikTok, Instagram and Snapchat. Live probes, no credentials required."}
+            {t.hawkEye?.subtitle ??
+              "Cross-platform OSINT with archived snapshots, public Instagram metadata and an AI-driven identity narrative."}
           </p>
         </div>
-
         <div className="flex flex-wrap gap-3">
-          <Stat label={t.hawkeye?.statTargets ?? "TARGETS"} value={platforms.length.toString().padStart(2, "0")} />
+          <Stat label={t.hawkEye?.statMatches ?? "MATCHES"} value={stats.found} />
           <Stat
-            label={t.hawkeye?.statFound ?? "FOUND"}
-            value={summary.found.toString().padStart(2, "0")}
+            label={t.hawkEye?.statArchive ?? "ARCHIVED"}
+            value={stats.archive}
             accent
           />
-          <Stat
-            label={t.hawkeye?.statMissing ?? "MISSING"}
-            value={summary.notFound.toString().padStart(2, "0")}
-          />
+          <Stat label={t.hawkEye?.statLinks ?? "LINKS"} value={stats.links} />
         </div>
       </div>
 
-      {/* ----- Mode toggle + query */}
+      {/* Toolbar */}
       <div className="surface-strong rounded-xl p-3 sm:p-4 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
         <div className="flex items-center surface px-1 h-10 shrink-0">
           <ModeBtn
             active={mode === "username"}
             onClick={() => setMode("username")}
             icon={<AtSign size={12} />}
-            label={t.hawkeye?.modeUsername ?? "Username"}
+            label={t.hawkEye?.modeUsername ?? "Username"}
           />
           <ModeBtn
             active={mode === "email"}
             onClick={() => setMode("email")}
             icon={<Mail size={12} />}
-            label={t.hawkeye?.modeEmail ?? "Email"}
+            label={t.hawkEye?.modeEmail ?? "Email"}
           />
           <ModeBtn
             active={mode === "phone"}
             onClick={() => setMode("phone")}
             icon={<Phone size={12} />}
-            label={t.hawkeye?.modePhone ?? "Phone"}
+            label={t.hawkEye?.modePhone ?? "Phone"}
           />
         </div>
         <div className="relative flex-1">
@@ -321,10 +249,10 @@ export function HawkEyeSection() {
             }}
             placeholder={
               mode === "username"
-                ? t.hawkeye?.placeholderUsername ?? "agent_codename"
+                ? t.hawkEye?.placeholderUsername ?? "agent_codename"
                 : mode === "phone"
-                  ? t.hawkeye?.placeholderPhone ?? "998901234567"
-                  : t.hawkeye?.placeholderEmail ?? "target@domain.com"
+                  ? t.hawkEye?.placeholderPhone ?? "998901234567"
+                  : t.hawkEye?.placeholderEmail ?? "target@domain.com"
             }
             className={cn(
               "w-full h-10 bg-ink-300/60 border border-white/[0.06] rounded-md font-mono text-[13px] text-white placeholder-white/30 focus:outline-none focus:border-amber-glow/50",
@@ -338,12 +266,7 @@ export function HawkEyeSection() {
         <button
           onClick={startScan}
           disabled={scanning || !query.trim()}
-          className={cn(
-            "h-10 px-5 rounded-md font-mono text-[11px] uppercase tracking-[0.22em] transition shrink-0",
-            "bg-amber-glow/20 text-amber-glow border border-amber-glow/40 hover:bg-amber-glow/30",
-            "disabled:opacity-40 disabled:cursor-not-allowed",
-            "flex items-center gap-2",
-          )}
+          className="h-10 px-5 rounded-md font-mono text-[11px] uppercase tracking-[0.22em] bg-amber-glow/20 text-amber-glow border border-amber-glow/40 hover:bg-amber-glow/30 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
         >
           {scanning ? (
             <Loader2 size={12} className="animate-spin" />
@@ -351,27 +274,44 @@ export function HawkEyeSection() {
             <Search size={12} />
           )}
           {scanning
-            ? t.hawkeye?.scanning ?? "Scanning"
-            : t.hawkeye?.runScan ?? "Run scan"}
+            ? t.hawkEye?.scanning ?? "Scanning"
+            : t.hawkEye?.runScan ?? "Run scan"}
         </button>
+
+        {report && (
+          <button
+            onClick={() => setPickerOpen(true)}
+            disabled={appending || (report.links.length === 0 && report.imageUrls.length === 0)}
+            className="h-10 px-5 rounded-md font-mono text-[11px] uppercase tracking-[0.22em] bg-emerald-glow/20 text-emerald-glow border border-emerald-glow/40 hover:bg-emerald-glow/30 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+          >
+            {appending ? (
+              <Loader2 size={12} className="animate-spin" />
+            ) : (
+              <Save size={12} />
+            )}
+            {t.hawkEye?.saveToDossier ?? "Save to dossier"}
+          </button>
+        )}
       </div>
 
-      {/* ----- Status line */}
+      {/* Status line */}
       <div className="mt-3 flex flex-wrap items-center gap-2 font-mono text-[10px] uppercase tracking-[0.22em] text-white/40">
         {scanning ? (
           <>
             <span className="h-1.5 w-1.5 rounded-full bg-amber-glow animate-pulse" />
-            {t.hawkeye?.statusLive ?? "LIVE PROBE · "}{summary.pending}/{platforms.length}
+            {t.hawkEye?.statusLive ??
+              "DEEP RECON RUNNING · WAYBACK + AI NARRATIVE"}
           </>
         ) : elapsed ? (
           <>
             <CheckCircle2 size={11} className="text-emerald-glow" />
-            {t.hawkeye?.statusComplete ?? "SCAN COMPLETE · "}{elapsed}s
+            {t.hawkEye?.statusComplete ?? "RECON COMPLETE · "}
+            {elapsed}s
           </>
         ) : (
           <>
-            <Crosshair size={11} className="text-amber-glow" />
-            {t.hawkeye?.statusReady ?? "READY · STAND BY"}
+            <Eye size={11} className="text-amber-glow" />
+            {t.hawkEye?.statusReady ?? "STAND BY · TARGET ANY IDENTIFIER"}
           </>
         )}
         {error && (
@@ -381,33 +321,79 @@ export function HawkEyeSection() {
         )}
       </div>
 
-      {/* ----- Platform cards */}
-      <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        {platforms.map((p) => {
-          const meta = PLATFORM_META[p];
-          const r = results[p];
-          return (
-            <PlatformCard
-              key={p}
-              platform={p}
-              meta={meta}
-              result={r}
-              i18n={t.hawkeye}
-            />
-          );
-        })}
-      </div>
+      {/* Body */}
+      {report && (
+        <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-4">
+          {/* AI summary */}
+          <div className="lg:col-span-2 space-y-4">
+            {report.ai && report.ai.narrative ? (
+              <AiNarrativeCard ai={report.ai} t={t} />
+            ) : (
+              <div className="surface-strong rounded-xl p-4 text-[12px] text-white/45 flex items-center gap-2">
+                <Sparkles size={12} className="text-amber-glow/60" />
+                {t.hawkEye?.aiUnavailable ??
+                  "AI summary unavailable — set GEMINI_API_KEY or OPENROUTER_API_KEY."}
+              </div>
+            )}
 
-      {/* ----- Tips footer */}
-      <div className="mt-6 text-[11px] text-white/35 font-mono leading-relaxed">
-        {t.hawkeye?.tip ??
-          "TIP · USERNAME mode probes 4 social platforms. EMAIL mode currently checks Gravatar — more sources arrive in the next release."}
-      </div>
+            {report.instagram && (
+              <InstagramCard ig={report.instagram} t={t} />
+            )}
+
+            <ProbeGrid hawk={report.hawk} t={t} />
+          </div>
+
+          {/* Sidebar */}
+          <div className="space-y-4">
+            <ArchiveTimeline archive={report.archive} t={t} />
+            <LinkBundle report={report} t={t} />
+          </div>
+        </div>
+      )}
+
+      {/* Dossier picker */}
+      <AnimatePresence>
+        {pickerOpen && report && (
+          <DossierPicker
+            dossiers={dossiers}
+            onClose={() => setPickerOpen(false)}
+            onPick={appendToDossier}
+            appending={appending}
+            t={t}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
 
-/* --------------------------------------------------------------- */
+/* --------------------------------------------------------- helpers */
+
+function buildSummaryBlock(r: EagleEyeReport): string {
+  const lines: string[] = [];
+  lines.push(`Target: ${r.query} (${r.mode})`);
+  if (r.ai?.narrative) {
+    lines.push("");
+    lines.push(r.ai.narrative);
+    if (r.ai.confidence)
+      lines.push(`Confidence: ${r.ai.confidence}/100`);
+  }
+  const found = r.hawk.filter((h) => h.status === "found");
+  if (found.length) {
+    lines.push("");
+    lines.push("Confirmed accounts:");
+    for (const f of found) {
+      lines.push(`  - ${f.platform}${f.display ? ` (${f.display})` : ""}: ${f.url ?? ""}`);
+    }
+  }
+  if (r.archive.length) {
+    lines.push("");
+    lines.push(`Archive snapshots: ${r.archive.length}`);
+  }
+  return lines.join("\n");
+}
+
+/* --------------------------------------------------------- components */
 
 function ModeBtn({
   active,
@@ -442,7 +428,7 @@ function Stat({
   accent,
 }: {
   label: string;
-  value: string;
+  value: number;
   accent?: boolean;
 }) {
   return (
@@ -459,189 +445,383 @@ function Stat({
           accent ? "text-amber-glow text-glow" : "text-white",
         )}
       >
-        {value}
+        {value.toString().padStart(2, "0")}
       </div>
     </div>
   );
 }
 
-function PlatformCard({
-  platform,
-  meta,
-  result,
-  i18n,
+function AiNarrativeCard({
+  ai,
+  t,
 }: {
-  platform: string;
-  meta: (typeof PLATFORM_META)[string] | undefined;
-  result: PlatformResult | undefined;
-  i18n: Record<string, string> | undefined;
+  ai: AiSummary;
+  t: ReturnType<typeof useI18n>["t"];
 }) {
-  const status: ProbeStatus = (result?.status as ProbeStatus) ?? "idle";
+  const conf = ai.confidence ?? 0;
   const tone =
-    status === "found"
+    conf >= 75
       ? "border-emerald-glow/40 bg-emerald-glow/[0.04]"
-      : status === "not-found"
-        ? "border-white/[0.06] bg-ink-300/40"
-        : status === "unclear"
-          ? "border-amber-glow/30 bg-amber-glow/[0.04]"
-          : status === "error"
-            ? "border-warning/40 bg-warning/[0.04]"
-            : status === "pending"
-              ? "border-amber-glow/30 bg-amber-glow/[0.06]"
-              : "border-white/[0.06]";
-
-  const StatusIcon =
-    status === "found"
-      ? CheckCircle2
-      : status === "not-found"
-        ? XCircle
-        : status === "unclear"
-          ? AlertCircle
-          : status === "error"
-            ? ShieldOff
-            : status === "pending"
-              ? Loader2
-              : null;
-
-  const statusColor =
-    status === "found"
-      ? "text-emerald-glow"
-      : status === "not-found"
-        ? "text-white/40"
-        : status === "unclear"
-          ? "text-amber-glow"
-          : status === "error"
-            ? "text-warning"
-            : status === "pending"
-              ? "text-amber-glow"
-              : "text-white/30";
-
-  const statusLabel =
-    status === "found"
-      ? i18n?.statusFound ?? "FOUND"
-      : status === "not-found"
-        ? i18n?.statusNotFound ?? "NOT FOUND"
-        : status === "unclear"
-          ? i18n?.statusUnclear ?? "UNCLEAR"
-          : status === "error"
-            ? i18n?.statusError ?? "ERROR"
-            : status === "pending"
-              ? i18n?.statusPending ?? "PROBING…"
-              : i18n?.statusIdle ?? "STAND BY";
-
+      : conf >= 40
+        ? "border-amber-glow/40 bg-amber-glow/[0.04]"
+        : "border-white/[0.08]";
   return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, y: 6 }}
-      animate={{ opacity: 1, y: 0 }}
-      className={cn(
-        "relative rounded-xl border p-4 overflow-hidden bg-gradient-to-br",
-        meta?.tone,
-        tone,
-      )}
-    >
-      {/* Top row */}
-      <div className="flex items-start justify-between gap-2 mb-3">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="text-lg leading-none">{meta?.icon}</span>
-            <span className="font-display tracking-[0.18em] uppercase text-[15px] text-white">
-              {meta?.label ?? platform}
-            </span>
-          </div>
-          <div className="font-mono text-[10px] text-white/40 mt-1">
-            {meta?.subtitle}
-          </div>
-        </div>
-        <div className="flex items-center gap-1.5 shrink-0">
-          {StatusIcon && (
-            <StatusIcon
-              size={13}
-              className={cn(
-                statusColor,
-                status === "pending" && "animate-spin",
-              )}
-            />
-          )}
-          <span
-            className={cn(
-              "font-mono text-[9px] uppercase tracking-[0.22em]",
-              statusColor,
-            )}
-          >
-            {statusLabel}
+    <div className={cn("rounded-xl border p-5", tone)}>
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <Sparkles size={13} className="text-amber-glow" />
+          <span className="font-display tracking-[0.18em] uppercase text-[13px] text-white">
+            {t.hawkEye?.aiTitle ?? "AI Identity Narrative"}
           </span>
         </div>
-      </div>
-
-      {/* Detail */}
-      <AnimatePresence mode="wait">
-        {status === "found" && result && (
-          <motion.div
-            key="found"
-            initial={{ opacity: 0, y: 4 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="space-y-2"
-          >
-            {result.display && (
-              <div className="text-[12px] text-white/85 line-clamp-2 break-words">
-                {result.display}
-              </div>
-            )}
-            {result.url && (
-              <a
-                href={result.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.22em] text-emerald-glow hover:text-white"
-              >
-                <ExternalLink size={10} />
-                {i18n?.openProfile ?? "Open profile"}
-              </a>
-            )}
-          </motion.div>
-        )}
-        {status !== "found" && status !== "idle" && (result?.detail || result?.url) && (
-          <motion.div
-            key="meta"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="space-y-1.5"
-          >
-            {result?.detail && (
-              <div className="text-[11px] text-white/55">{result.detail}</div>
-            )}
-            {result?.url && (
-              <a
-                href={result.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 font-mono text-[10px] text-white/40 hover:text-white/70 truncate"
-              >
-                <ExternalLink size={9} />
-                <span className="truncate">{result.url.replace(/^https?:\/\//, "")}</span>
-              </a>
-            )}
-          </motion.div>
-        )}
-        {status === "idle" && (
-          <motion.div
-            key="idle"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="text-[11px] text-white/30 font-mono"
-          >
-            {i18n?.cardIdle ?? "Awaiting target…"}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Duration footer */}
-      {result?.durationMs ? (
-        <div className="mt-3 pt-2 border-t border-white/[0.04] font-mono text-[9px] uppercase tracking-[0.22em] text-white/30">
-          {(result.durationMs / 1000).toFixed(2)}s
+        <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-white/40">
+          {t.hawkEye?.confidence ?? "CONFIDENCE"} · {conf}/100
         </div>
-      ) : null}
+      </div>
+      <p className="text-[13px] text-white/85 leading-relaxed">
+        {ai.narrative}
+      </p>
+      {ai.highlights.length > 0 && (
+        <ul className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+          {ai.highlights.map((h, i) => (
+            <li
+              key={i}
+              className="text-[11px] text-white/70 flex items-start gap-1.5"
+            >
+              <span className="mt-1 inline-block h-1 w-1 rounded-full bg-amber-glow/70 shrink-0" />
+              {h}
+            </li>
+          ))}
+        </ul>
+      )}
+      {ai.riskHints.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {ai.riskHints.map((r, i) => (
+            <span
+              key={i}
+              className="font-mono text-[9px] uppercase tracking-[0.2em] px-2 py-1 rounded bg-warning/10 text-warning border border-warning/30 inline-flex items-center gap-1"
+            >
+              <AlertTriangle size={9} />
+              {r}
+            </span>
+          ))}
+        </div>
+      )}
+      <div className="mt-3 font-mono text-[9px] uppercase tracking-[0.22em] text-white/30">
+        {t.hawkEye?.via ?? "VIA"} · {ai.provider.toUpperCase()}
+      </div>
+    </div>
+  );
+}
+
+function InstagramCard({
+  ig,
+  t,
+}: {
+  ig: InstagramMetadata;
+  t: ReturnType<typeof useI18n>["t"];
+}) {
+  return (
+    <div className="rounded-xl border border-white/[0.08] bg-gradient-to-br from-fuchsia-500/10 to-amber-500/[0.03] p-4">
+      <div className="flex items-start gap-3">
+        {ig.avatarUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={ig.avatarUrl}
+            alt={ig.handle}
+            referrerPolicy="no-referrer"
+            className="h-14 w-14 rounded-md object-cover border border-white/10 shrink-0"
+          />
+        ) : (
+          <div className="h-14 w-14 rounded-md grid place-items-center bg-fuchsia-500/15 border border-fuchsia-400/30 shrink-0">
+            <Instagram size={18} className="text-fuchsia-300" />
+          </div>
+        )}
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-display tracking-[0.12em] uppercase text-[15px] text-white truncate">
+              {ig.fullName ?? `@${ig.handle}`}
+            </span>
+            {ig.isVerified && (
+              <BadgeCheck size={13} className="text-sky-300" />
+            )}
+            {ig.isPrivate && (
+              <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-white/55 inline-flex items-center gap-1">
+                <Lock size={9} /> {t.hawkEye?.private ?? "PRIVATE"}
+              </span>
+            )}
+          </div>
+          <div className="font-mono text-[10px] text-white/40 mt-0.5">
+            instagram.com/{ig.handle}
+          </div>
+          {ig.bio && (
+            <p className="mt-2 text-[12px] text-white/75 whitespace-pre-line line-clamp-3">
+              {ig.bio}
+            </p>
+          )}
+          <div className="mt-3 flex flex-wrap gap-3 text-[11px] font-mono text-white/55">
+            {typeof ig.posts === "number" && (
+              <span>
+                <span className="text-white">{formatCount(ig.posts)}</span>{" "}
+                {t.hawkEye?.posts ?? "POSTS"}
+              </span>
+            )}
+            {typeof ig.followers === "number" && (
+              <span>
+                <span className="text-white">{formatCount(ig.followers)}</span>{" "}
+                {t.hawkEye?.followers ?? "FOLLOWERS"}
+              </span>
+            )}
+            {typeof ig.following === "number" && (
+              <span>
+                <span className="text-white">{formatCount(ig.following)}</span>{" "}
+                {t.hawkEye?.following ?? "FOLLOWING"}
+              </span>
+            )}
+          </div>
+          <a
+            href={ig.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-3 inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.22em] text-amber-glow hover:text-white"
+          >
+            <ExternalLink size={10} /> {t.hawkEye?.openProfile ?? "Open profile"}
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function formatCount(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
+  return n.toString();
+}
+
+function ProbeGrid({
+  hawk,
+  t,
+}: {
+  hawk: ProbeResult[];
+  t: ReturnType<typeof useI18n>["t"];
+}) {
+  return (
+    <div className="surface-strong rounded-xl p-4">
+      <div className="font-display tracking-[0.18em] uppercase text-[13px] text-white mb-3 flex items-center gap-2">
+        <ShieldCheck size={13} className="text-emerald-glow" />
+        {t.hawkEye?.probeTitle ?? "Cross-platform probe"}
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+        {hawk.map((h) => (
+          <ProbePill key={h.platform} probe={h} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ProbePill({ probe }: { probe: ProbeResult }) {
+  const tone =
+    probe.status === "found"
+      ? "border-emerald-glow/40 bg-emerald-glow/[0.06] text-emerald-glow"
+      : probe.status === "not-found"
+        ? "border-white/[0.06] bg-ink-300/30 text-white/40"
+        : probe.status === "unclear"
+          ? "border-amber-glow/30 bg-amber-glow/[0.04] text-amber-glow"
+          : "border-warning/30 bg-warning/[0.04] text-warning";
+  const inner = (
+    <div className={cn("rounded-md border px-2.5 py-2", tone)}>
+      <div className="font-mono text-[10px] uppercase tracking-[0.22em] truncate">
+        {probe.platform}
+      </div>
+      <div className="text-[11px] text-white/85 mt-0.5 truncate">
+        {probe.display ?? probe.detail ?? "—"}
+      </div>
+    </div>
+  );
+  return probe.url && probe.status === "found" ? (
+    <a href={probe.url} target="_blank" rel="noopener noreferrer">
+      {inner}
+    </a>
+  ) : (
+    inner
+  );
+}
+
+function ArchiveTimeline({
+  archive,
+  t,
+}: {
+  archive: ArchiveSnapshot[];
+  t: ReturnType<typeof useI18n>["t"];
+}) {
+  return (
+    <div className="surface-strong rounded-xl p-4">
+      <div className="font-display tracking-[0.18em] uppercase text-[13px] text-white mb-3 flex items-center gap-2">
+        <History size={13} className="text-amber-glow" />
+        {t.hawkEye?.archiveTitle ?? "Wayback timeline"}
+      </div>
+      {archive.length === 0 ? (
+        <div className="text-[11px] text-white/40">
+          {t.hawkEye?.archiveEmpty ??
+            "No archived snapshots — try the username mode."}
+        </div>
+      ) : (
+        <ul className="space-y-2 max-h-[360px] overflow-y-auto pr-1">
+          {archive.map((a, i) => (
+            <li
+              key={`${a.timestamp}-${i}`}
+              className="border-l-2 border-amber-glow/40 pl-3"
+            >
+              <a
+                href={a.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block group"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/55">
+                    {a.source}
+                  </span>
+                  <span className="font-mono text-[9px] text-white/40">
+                    {a.date.slice(0, 10)}
+                  </span>
+                </div>
+                <div className="text-[11px] text-amber-glow group-hover:text-white truncate">
+                  {a.url.replace(/^https?:\/\//, "")}
+                </div>
+              </a>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function LinkBundle({
+  report,
+  t,
+}: {
+  report: EagleEyeReport;
+  t: ReturnType<typeof useI18n>["t"];
+}) {
+  return (
+    <div className="surface-strong rounded-xl p-4">
+      <div className="font-display tracking-[0.18em] uppercase text-[13px] text-white mb-3 flex items-center gap-2">
+        <Link2 size={13} className="text-emerald-glow" />
+        {t.hawkEye?.bundleTitle ?? "Collected links"}
+      </div>
+      <div className="grid grid-cols-2 gap-2 mb-3">
+        <div className="surface px-3 py-2">
+          <div className="label-mono flex items-center gap-1">
+            <Link2 size={9} /> {t.hawkEye?.linkCount ?? "LINKS"}
+          </div>
+          <div className="font-display text-[15px] text-white">
+            {report.links.length}
+          </div>
+        </div>
+        <div className="surface px-3 py-2">
+          <div className="label-mono flex items-center gap-1">
+            <ImageIcon size={9} /> {t.hawkEye?.imageCount ?? "IMAGES"}
+          </div>
+          <div className="font-display text-[15px] text-white">
+            {report.imageUrls.length}
+          </div>
+        </div>
+      </div>
+      {report.links.length === 0 && (
+        <div className="text-[11px] text-white/40">
+          {t.hawkEye?.bundleEmpty ?? "Run a scan to collect links."}
+        </div>
+      )}
+      {report.links.length > 0 && (
+        <ul className="space-y-1 max-h-[180px] overflow-y-auto pr-1">
+          {report.links.slice(0, 50).map((l, i) => (
+            <li key={i}>
+              <a
+                href={l}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[11px] text-emerald-glow/85 hover:text-white truncate block font-mono"
+              >
+                {l.replace(/^https?:\/\//, "")}
+              </a>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function DossierPicker({
+  dossiers,
+  onClose,
+  onPick,
+  appending,
+  t,
+}: {
+  dossiers: Dossier[];
+  onClose: () => void;
+  onPick: (id: string) => void;
+  appending: boolean;
+  t: ReturnType<typeof useI18n>["t"];
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 grid place-items-center bg-ink-50/80 backdrop-blur-sm p-4"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ scale: 0.95, y: 8 }}
+        animate={{ scale: 1, y: 0 }}
+        exit={{ scale: 0.95, y: 8 }}
+        onClick={(e) => e.stopPropagation()}
+        className="surface-strong rounded-xl p-5 max-w-md w-full"
+      >
+        <div className="flex items-center justify-between mb-4">
+          <div className="font-display tracking-[0.18em] uppercase text-[14px] text-white">
+            {t.hawkEye?.pickDossier ?? "Pick a dossier"}
+          </div>
+          <button
+            onClick={onClose}
+            className="font-mono text-[10px] uppercase tracking-[0.22em] text-white/45 hover:text-white"
+          >
+            {t.common.close}
+          </button>
+        </div>
+        {dossiers.length === 0 ? (
+          <div className="text-[12px] text-white/45">
+            {t.hawkEye?.noDossiers ??
+              "No dossiers yet — create one in My Database first."}
+          </div>
+        ) : (
+          <ul className="max-h-[60vh] overflow-y-auto space-y-1.5 pr-1">
+            {dossiers.map((d) => (
+              <li key={d.id}>
+                <button
+                  disabled={appending}
+                  onClick={() => onPick(d.id)}
+                  className="w-full text-left surface px-3 py-2.5 hover:border-emerald-glow/30 transition disabled:opacity-50"
+                >
+                  <div className="text-[13px] text-white truncate">
+                    {d.fullName ?? d.alias ?? "—"}
+                  </div>
+                  <div className="font-mono text-[10px] text-white/45 mt-0.5">
+                    {d.classification} · {d.riskLevel} · AGS-
+                    {d.id.slice(-8).toUpperCase()}
+                  </div>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </motion.div>
     </motion.div>
   );
 }
