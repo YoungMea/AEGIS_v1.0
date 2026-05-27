@@ -77,9 +77,10 @@ export async function GET(req: NextRequest) {
   let queryFor: (p: HawkEyePlatform) => string;
 
   if (mode === "email") {
-    platforms = [...EMAIL_PLATFORMS, ...USERNAME_PLATFORMS];
+    platforms = [...EMAIL_PLATFORMS, ...USERNAME_PLATFORMS.filter((p) => p !== "github")];
     const local = query.split("@")[0] ?? query;
-    queryFor = (p) => (p === "gravatar" ? query : local);
+    queryFor = (p) =>
+      p === "gravatar" || p === "github" ? query : local;
   } else if (mode === "phone") {
     platforms = PHONE_PLATFORMS;
     queryFor = () => query;

@@ -99,13 +99,27 @@ const PLATFORM_META: Record<
     icon: "▲",
     subtitle: "signal.me/#p/<phone>",
   },
+  github: {
+    label: "GitHub",
+    tone: "from-zinc-500/30 to-zinc-500/5 border-zinc-400/30",
+    icon: "⌥",
+    subtitle: "github.com/<handle>",
+  },
 };
 
-const USERNAME_LIST = ["telegram", "tiktok", "instagram", "snapchat", "blink"];
-// Email mode probes Gravatar against the email *and* every social platform
-// against the email's localpart — most people reuse handles.
+const USERNAME_LIST = [
+  "telegram",
+  "tiktok",
+  "instagram",
+  "snapchat",
+  "blink",
+  "github",
+];
+// Email mode hits Gravatar AND GitHub directly with the email; the rest
+// of the social platforms get probed against the email's localpart.
 const EMAIL_LIST = [
   "gravatar",
+  "github",
   "telegram",
   "tiktok",
   "instagram",

@@ -172,7 +172,7 @@ export const en: Translation = {
     cardIdle: "Awaiting target…",
     openProfile: "Open profile",
     scanFailed: "Scan failed — try again.",
-    tip: "TIP · USERNAME mode probes Telegram, TikTok, Instagram, Snapchat and Blink. EMAIL mode adds Gravatar and reuses the email localpart against every social platform. PHONE mode validates WhatsApp, Telegram, Viber, Signal and Blink deep-links.",
+    tip: "TIP · USERNAME mode probes Telegram, TikTok, Instagram, Snapchat, Blink and GitHub. EMAIL mode looks up Gravatar + GitHub directly by email (returns the bound username when available) and reuses the localpart against social platforms. PHONE mode validates WhatsApp, Telegram, Viber, Signal and Blink deep-links.",
   },
   activity: {
     badge: "AUDIT LOG",
