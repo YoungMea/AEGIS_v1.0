@@ -69,12 +69,24 @@ export async function GET(req: NextRequest) {
     return new Response("Slow down", { status: 429 });
   }
 
-  const platforms: HawkEyePlatform[] =
-    mode === "email"
-      ? EMAIL_PLATFORMS
-      : mode === "phone"
-        ? PHONE_PLATFORMS
-        : USERNAME_PLATFORMS;
+  // Build the platform list and per-platform query. In email mode we run
+  // Gravatar against the full email *and* probe each social platform with
+  // the email's localpart as a candidate handle — most people pick the
+  // same string for both.
+  let platforms: HawkEyePlatform[];
+  let queryFor: (p: HawkEyePlatform) => string;
+
+  if (mode === "email") {
+    platforms = [...EMAIL_PLATFORMS, ...USERNAME_PLATFORMS];
+    const local = query.split("@")[0] ?? query;
+    queryFor = (p) => (p === "gravatar" ? query : local);
+  } else if (mode === "phone") {
+    platforms = PHONE_PLATFORMS;
+    queryFor = () => query;
+  } else {
+    platforms = USERNAME_PLATFORMS;
+    queryFor = () => query;
+  }
 
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
@@ -103,7 +115,7 @@ export async function GET(req: NextRequest) {
           send("pending", { platform: p });
           let result: ProbeResult;
           try {
-            result = await probe(p, query);
+            result = await probe(p, queryFor(p));
           } catch (e) {
             result = {
               platform: p,

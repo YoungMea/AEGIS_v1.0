@@ -39,7 +39,9 @@ export type HawkEyePlatform =
   | "gravatar"
   | "whatsapp"
   | "telegramPhone"
-  | "blinkPhone";
+  | "blinkPhone"
+  | "viber"
+  | "signal";
 
 export type HawkEyeMode = "username" | "email" | "phone";
 
@@ -56,6 +58,8 @@ export const EMAIL_PLATFORMS: HawkEyePlatform[] = ["gravatar"];
 export const PHONE_PLATFORMS: HawkEyePlatform[] = [
   "whatsapp",
   "telegramPhone",
+  "viber",
+  "signal",
   "blinkPhone",
 ];
 
@@ -354,6 +358,44 @@ async function probeBlinkPhone(phone: string): Promise<ProbeResult> {
 }
 
 /**
+ * Viber click-to-chat — public web router doesn't actually verify
+ * registration (no public lookup endpoint), but a `viber://chat?number=+<phone>`
+ * deep-link is widely supported. We surface a clickable link so an analyst
+ * can confirm via the Viber client.
+ */
+async function probeViber(phone: string): Promise<ProbeResult> {
+  const start = Date.now();
+  const digits = phone.replace(/\D/g, "");
+  // Use the Viber web entry-point — falls through to the app on mobile.
+  const url = `viber://chat?number=%2B${digits}`;
+  return base(
+    "viber",
+    "unclear",
+    url,
+    "Deep-link only · open Viber to confirm",
+    start,
+  );
+}
+
+/**
+ * Signal exposes deep-links via signal.me — no public lookup, but the
+ * analyst can resolve registration by opening the link on a device that
+ * already has Signal installed.
+ */
+async function probeSignal(phone: string): Promise<ProbeResult> {
+  const start = Date.now();
+  const digits = phone.replace(/\D/g, "");
+  const url = `https://signal.me/#p/+${digits}`;
+  return base(
+    "signal",
+    "unclear",
+    url,
+    "Deep-link only · open Signal to confirm",
+    start,
+  );
+}
+
+/**
  * Gravatar exposes a JSON profile keyed by lowercase MD5 of the email.
  * 200 = profile exists, 404 = no Gravatar bound.
  */
@@ -426,6 +468,10 @@ export async function probe(
       return probeTelegramPhone(query);
     case "blinkPhone":
       return probeBlinkPhone(query);
+    case "viber":
+      return probeViber(query);
+    case "signal":
+      return probeSignal(query);
   }
 }
 

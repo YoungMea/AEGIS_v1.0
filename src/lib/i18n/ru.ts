@@ -172,7 +172,7 @@ export const ru: Translation = {
     cardIdle: "Ожидание цели…",
     openProfile: "Открыть профиль",
     scanFailed: "Скан не удался — попробуйте снова.",
-    tip: "СОВЕТ · USERNAME режим параллельно проверяет Telegram, TikTok, Instagram, Snapchat и Blink. EMAIL режим — Gravatar. PHONE режим валидирует WhatsApp и Telegram deep-link'и — Blink ищет контакты только в приложении.",
+    tip: "СОВЕТ · Режим USERNAME проверяет Telegram, TikTok, Instagram, Snapchat и Blink. Режим EMAIL добавляет Gravatar и пробует localpart адреса против всех соцсетей. Режим PHONE валидирует WhatsApp, Telegram, Viber, Signal и Blink deep-link'и.",
   },
   activity: {
     badge: "ЖУРНАЛ АКТИВНОСТИ",

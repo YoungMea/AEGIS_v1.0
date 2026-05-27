@@ -87,11 +87,38 @@ const PLATFORM_META: Record<
     icon: "★",
     subtitle: "blinkmap.com (in-app contacts)",
   },
+  viber: {
+    label: "Viber",
+    tone: "from-violet-500/30 to-violet-500/5 border-violet-400/30",
+    icon: "☏",
+    subtitle: "viber://chat?number=<phone>",
+  },
+  signal: {
+    label: "Signal",
+    tone: "from-blue-500/30 to-blue-500/5 border-blue-400/30",
+    icon: "▲",
+    subtitle: "signal.me/#p/<phone>",
+  },
 };
 
 const USERNAME_LIST = ["telegram", "tiktok", "instagram", "snapchat", "blink"];
-const EMAIL_LIST = ["gravatar"];
-const PHONE_LIST = ["whatsapp", "telegramPhone", "blinkPhone"];
+// Email mode probes Gravatar against the email *and* every social platform
+// against the email's localpart — most people reuse handles.
+const EMAIL_LIST = [
+  "gravatar",
+  "telegram",
+  "tiktok",
+  "instagram",
+  "snapchat",
+  "blink",
+];
+const PHONE_LIST = [
+  "whatsapp",
+  "telegramPhone",
+  "viber",
+  "signal",
+  "blinkPhone",
+];
 
 export function HawkEyeSection() {
   const { t } = useI18n();

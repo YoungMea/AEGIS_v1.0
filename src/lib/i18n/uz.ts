@@ -172,7 +172,7 @@ export const uz: Translation = {
     cardIdle: "Maqsad kutilmoqda…",
     openProfile: "Profilni ochish",
     scanFailed: "Skanerlashda xatolik — qayta urinib ko'ring.",
-    tip: "MASLAHAT · USERNAME rejimi Telegram, TikTok, Instagram, Snapchat va Blink'ni parallel tekshiradi. EMAIL rejimi Gravatar'ni ko'radi. PHONE rejimi WhatsApp va Telegram deep-link'larini tekshiradi — Blink kontakt qidiruvi ilova ichidagina.",
+    tip: "MASLAHAT · USERNAME rejimi Telegram, TikTok, Instagram, Snapchat va Blink'ni tekshiradi. EMAIL rejimi qo'shimcha Gravatar va email localpart'ini barcha ijtimoiy platformalarda sinab ko'radi. PHONE rejimi WhatsApp, Telegram, Viber, Signal va Blink deep-link'larini tekshiradi.",
   },
   activity: {
     badge: "AUDIT JURNALI",
